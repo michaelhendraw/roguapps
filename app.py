@@ -93,8 +93,9 @@ def handle_text_message(event):
             )
         else:
             text = text.replace(' ', '')
-            code,dob = text.split("-")
-            if code is None or dob is None:
+            texts = text.split("-")
+
+            if len(texts) != 2:
                 print("HERE session after:",session)
 
                 line_bot_api.reply_message(
@@ -109,9 +110,11 @@ def handle_text_message(event):
                     ]
                 )
             else:
-                if util.validate_date(dob):
+                code = texts[0]
+                dob = texts[1]
+                if util.validate_date(dob,"%d%m%Y"):
                     query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
-                    conn.query(query_select, (text))
+                    conn.query(query_select, (code, convert_date(dob,"%d%m%Y","%Y-%m-%d")))
                     row = conn.cursor.fetchone()
                     if row == None:
                         print("HERE session after:",session)

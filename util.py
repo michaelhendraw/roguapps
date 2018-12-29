@@ -1,9 +1,14 @@
 import datetime
 
-def validate_date(date_text):
+def validate_date(date_text, date_format):
+    isValidDate = True
+    
     try:
-        if date_text != datetime.strptime(date_text, "%Y-%m-%d").strftime('%Y-%m-%d'):
-            raise ValueError
-        return True
+        datetime.datetime.strptime(date_text, date_format)
     except ValueError:
-        return False
+        isValidDate = False
+
+    return isValidDate
+
+def convert_date(date_text, date_format_before, date_format_after):
+    return datetime.datetime.strptime(date_text, date_format_before).strftime(date_format_after)
