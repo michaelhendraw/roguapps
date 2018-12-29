@@ -57,8 +57,8 @@ def callback():
         line_user_id = events.pop().source.user_id
         session['line_user_id'] = line_user_id
         
-        print("signature:",signature)
-        print("request body:",body)
+        print("HERE signature:",signature)
+        print("HERE request body:",body)
         
         handler.handle(body, signature)
     except InvalidSignatureError:
@@ -71,31 +71,16 @@ def handle_text_message(event):
     conn = model.Conn()
 
     text = event.message.text
-    print("text:",text)
+    print("HERE text:",text)
 
-    print("session before:",session)
+    print("HERE session before:",session)
     if 'user_id' not in session:
-        if session['status'] == "":
-            session['status'] = "login"
-            print("session after:",session)
-
-            line_bot_api.reply_message(
-                event.reply_token,
-                [
-                    TextMessage(
-                        text=constant.WELCOME_APP
-                    ),
-                    TextMessage(
-                        text=constant.LOGIN
-                    )
-                ]
-            )
-        elif session['status'] == "login":
+        if session['status'] == "login":
             query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
             conn.query(query_select, (text))
             row = conn.cursor.fetchone()
             if row == None:
-                print("session after:",session)
+                print("HERE session after:",session)
 
                 line_bot_api.reply_message(
                     event.reply_token,
@@ -116,7 +101,7 @@ def handle_text_message(event):
                 session['class_id'] = row["class_id"]
 
                 session['status'] = "home"
-                print("session after:",session)
+                print("HERE session after:",session)
                 
                 line_bot_api.reply_message(
                     event.reply_token,
@@ -126,6 +111,21 @@ def handle_text_message(event):
                         )
                     ]
                 )
+        else:
+            session['status'] = "login"
+            print("HERE session after:",session)
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextMessage(
+                        text=constant.WELCOME_APP
+                    ),
+                    TextMessage(
+                        text=constant.LOGIN
+                    )
+                ]
+            )
     else:
         if text == 'profile':
             if isinstance(event.source, SourceUser):
@@ -212,8 +212,8 @@ def test_db():
     rows = conn.cursor.fetchall()
 
     for row in rows:
-        print("Email = ", row["email"])
-        print("Name = ", row["name"], "\n")
+        print("HERE Email = ", row["email"])
+        print("HERE Name = ", row["name"], "\n")
 
     return 'OK'
 
