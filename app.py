@@ -104,7 +104,7 @@ def handle_text_message(event):
             #     }
             # }
         # ]
-        flex_template = TextSendMessage(
+        flex_template = TextMessage(
                             text="Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
                         )
         template_message = TemplateSendMessage(
