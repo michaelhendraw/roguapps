@@ -54,6 +54,8 @@ def callback():
     # handle webhook body
     try:
         events = parser.parse(body, signature)
+        line_user_id = event.pop().source.user_id
+        session['line_user_id'] = line_user_id
         
         print("signature:",signature)
         print("request body:",body)
@@ -69,9 +71,7 @@ def handle_text_message(event):
     conn = model.Conn()
 
     text = event.message.text
-
-    line_user_id = event.pop().source.user_id
-    session['line_user_id'] = line_user_id
+    print("text:",text)
 
     print("session before:",session)
     if 'user_id' not in session:
@@ -122,7 +122,7 @@ def handle_text_message(event):
                     event.reply_token,
                     [
                         TextMessage(
-                            text=constant.WELCOME_LOGIN % (session['name']),
+                            text=constant.WELCOME_HOME % (session['name']),
                         )
                     ]
                 )
