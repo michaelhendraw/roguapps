@@ -104,14 +104,16 @@ def handle_text_message(event):
             #     }
             # }
         # ]
-        flex_template = TextMessage(
-                            text="Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
-                        )
-        template_message = TemplateSendMessage(
-            alt_text='Flex Message',
-            template=flex_template
+        # template_message = TemplateSendMessage(
+        #     alt_text='Flex Message',
+        #     template=flex_template
+        # )
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextMessage(
+                text="Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
+            )
         )
-        line_bot_api.reply_message(event.reply_token,template_message)
     else:
         print("else")
         user_id = session['user_id']
