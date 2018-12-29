@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import json
 import os
 import sys
 
@@ -23,7 +24,8 @@ from linebot.models import (
     CarouselTemplate, CarouselColumn, PostbackEvent,
     StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
     ImageMessage, VideoMessage, AudioMessage,
-    UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent
+    UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent,
+    FlexSendMessage, FlexContainer, BubbleContainer, BoxComponent, TextComponent
 )
 
 app = Flask(__name__)
@@ -58,7 +60,6 @@ def callback():
         line_user_id = events.pop().source.user_id
         session['line_user_id'] = line_user_id
         
-        print("HERE signature:",signature)
         print("HERE request body:",body)
         
         handler.handle(body, signature)
@@ -72,9 +73,9 @@ def handle_text_message(event):
     conn = model.Conn()
 
     text = event.message.text
-    print("HERE text:",text)
 
     print("HERE session before:",session)
+    
     if 'user_id' not in session:
         if 'status' not in session:
             session['status'] = "login"
@@ -133,7 +134,6 @@ def handle_text_message(event):
                     else:
                         session['user_id'] = row["id"]
                         session['code'] = row["code"]
-                        session['line_code'] = row["line_code"]
                         session['name'] = row["name"]
                         session['class_id'] = row["class_id"]
 
@@ -163,81 +163,50 @@ def handle_text_message(event):
                         ]
                     )
     else:
-        if text == 'profile':
-            if isinstance(event.source, SourceUser):
-                profile = line_bot_api.get_profile(event.source.user_id)
-                line_bot_api.reply_message(
-                    event.reply_token, [
-                        TextSendMessage(
-                            text='Display name: ' + profile.display_name
+        if 'status' in session and session['status'] == "home":
+            print("HERE, home")
+
+            flex_message = FlexSendMessage(
+                altText="Flex Message", 
+                contents=FlexContainer(
+                    type="carousel",
+                    contents=[
+                        BubbleContainer(
+                            type="bubble",
+                            hero=ImageMessage(
+                                type="image",
+                                url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
+                                size="full",
+                                aspectRatio="20:13",
+                                aspectMode="cover"
+                            ),
+                            body=BoxComponent(
+                                type="box",
+                                layout="vertical",
+                                action=MessageTemplateAction(
+                                    type="message",
+                                    label="Matematika",
+                                    text="Matematika"
+                                ),
+                                contents=[
+                                    TextComponent(
+                                        type="text",
+                                        text="Matematika",
+                                        size="xl",
+                                        align="center",
+                                        weight="bold"
+                                    )
+                                ]
+                            )
                         ),
-                        TextSendMessage(
-                            text='Status message: ' + profile.status_message
-                        )
+                        # "https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg"
+                        # "Bahasa Indonesia"
                     ]
                 )
-            else:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextMessage(text="Bot can't use profile API without user ID"))
-        elif text == 'bye':
-            if isinstance(event.source, SourceGroup):
-                line_bot_api.reply_message(
-                    event.reply_token, TextMessage(text='Leaving group'))
-                line_bot_api.leave_group(event.source.group_id)
-            elif isinstance(event.source, SourceRoom):
-                line_bot_api.reply_message(
-                    event.reply_token, TextMessage(text='Leaving group'))
-                line_bot_api.leave_room(event.source.room_id)
-            else:
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    TextMessage(text="Bot can't leave from 1:1 chat"))
-        elif text == 'confirm':
-            confirm_template = ConfirmTemplate(text='Do it?', actions=[
-                MessageTemplateAction(label='Yes', text='Yes!'),
-                MessageTemplateAction(label='No', text='No!'),
-            ])
-            template_message = TemplateSendMessage(
-                alt_text='Confirm alt text', template=confirm_template)
-            line_bot_api.reply_message(event.reply_token, template_message)
-        elif text == 'buttons':
-            buttons_template = ButtonsTemplate(
-                title='My buttons sample', text='Hello, my buttons', actions=[
-                    URITemplateAction(
-                        label='Go to line.me', uri='https://line.me'),
-                    PostbackTemplateAction(label='ping', data='ping'),
-                    PostbackTemplateAction(
-                        label='ping with text', data='ping',
-                        text='ping'),
-                    MessageTemplateAction(label='Translate Rice', text='米')
-                ])
-            template_message = TemplateSendMessage(
-                alt_text='Buttons alt text', template=buttons_template)
-            line_bot_api.reply_message(event.reply_token, template_message)
-        elif text == 'carousel':
-            carousel_template = CarouselTemplate(columns=[
-                CarouselColumn(text='hoge1', title='fuga1', actions=[
-                    URITemplateAction(
-                        label='Go to line.me', uri='https://line.me'),
-                    PostbackTemplateAction(label='ping', data='ping')
-                ]),
-                CarouselColumn(text='hoge2', title='fuga2', actions=[
-                    PostbackTemplateAction(
-                        label='ping with text', data='ping',
-                        text='ping'),
-                    MessageTemplateAction(label='Translate Rice', text='米')
-                ]),
-            ])
-            template_message = TemplateSendMessage(
-                alt_text='Buttons alt text', template=carousel_template)
-            line_bot_api.reply_message(event.reply_token, template_message)
-        elif text == 'imagemap':
-            pass
-        else:
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text=event.message.text)
             )
+            line_bot_api.reply_message(event.reply_token, flex_message)
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
 
 @app.route("/test_db", methods=['GET'])
 def test_db():
