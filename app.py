@@ -87,7 +87,7 @@ def callback():
                                     "text": "Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
                                     "align": "center",
                                     "gravity": "center",
-                                    "wrap": true
+                                    "wrap": "true"
                                 }
                             ]
                         }
