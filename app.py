@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 import os
 import sys
 
-import model
 import constant
+import model
+import util
 
 from argparse import ArgumentParser
 from flask import session, Flask, request, abort, redirect, url_for, escape
@@ -91,17 +92,16 @@ def handle_text_message(event):
                 ]
             )
         else:
-            query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
-            conn.query(query_select, (text))
-            row = conn.cursor.fetchone()
-            if row == None:
+            text = text.replace(' ', '')
+            code,dob = text.split("-")
+            if code is None or dob is None:
                 print("HERE session after:",session)
 
                 line_bot_api.reply_message(
                     event.reply_token,
                     [
                         TextMessage(
-                            text=constant.LOGIN_FAIL
+                            text=constant.LOGIN_VALIDATION_FAIL
                         ),
                         TextMessage(
                             text=constant.LOGIN
@@ -109,23 +109,56 @@ def handle_text_message(event):
                     ]
                 )
             else:
-                session['user_id'] = row["id"]
-                session['code'] = row["code"]
-                session['line_code'] = row["line_code"]
-                session['name'] = row["name"]
-                session['class_id'] = row["class_id"]
+                if util.validate_date(dob):
+                    query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
+                    conn.query(query_select, (text))
+                    row = conn.cursor.fetchone()
+                    if row == None:
+                        print("HERE session after:",session)
 
-                session['status'] = "home"
-                print("HERE session after:",session)
-                
-                line_bot_api.reply_message(
-                    event.reply_token,
-                    [
-                        TextMessage(
-                            text=constant.WELCOME_HOME % (session['name']),
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            [
+                                TextMessage(
+                                    text=constant.LOGIN_FAIL
+                                ),
+                                TextMessage(
+                                    text=constant.LOGIN
+                                )
+                            ]
                         )
-                    ]
-                )
+                    else:
+                        session['user_id'] = row["id"]
+                        session['code'] = row["code"]
+                        session['line_code'] = row["line_code"]
+                        session['name'] = row["name"]
+                        session['class_id'] = row["class_id"]
+
+                        session['status'] = "home"
+                        print("HERE session after:",session)
+                        
+                        line_bot_api.reply_message(
+                            event.reply_token,
+                            [
+                                TextMessage(
+                                    text=constant.WELCOME_HOME % (session['name']),
+                                )
+                            ]
+                        )
+                else:
+                    print("HERE session after:",session)
+
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        [
+                            TextMessage(
+                                text=constant.LOGIN_VALIDATION_FAIL
+                            ),
+                            TextMessage(
+                                text=constant.LOGIN
+                            )
+                        ]
+                    )
     else:
         if text == 'profile':
             if isinstance(event.source, SourceUser):

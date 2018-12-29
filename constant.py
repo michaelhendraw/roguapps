@@ -8,8 +8,9 @@ DATABASE_URL = "postgres://ibixvzxplfguzm:6a5eab8ebaa96974bdadcb163b67587c4809b7
 # MESSAGES
 # LOGIN
 WELCOME_APP = "Hai, Selamat datang di Rogu!"
-LOGIN = "Silahkan masukkan NIS dan tanggal lahir (ddmmyyyy) kamu untuk melanjutkan belajar!. Contoh:123-31121996"
-LOGIN_FAIL = "Maaf, format salah atau data tidak ditemukan."
+LOGIN = "Silahkan masukkan NIS dan tanggal lahir (ddmmyyyy) kamu untuk melanjutkan belajar!.\nContoh:123-31121996"
+LOGIN_VALIDATION_FAIL = "Maaf, format yang kamu masukkan salah."
+LOGIN_FAIL = "Maaf, data tidak ditemukan."
 
 # HOME
 WELCOME_HOME = "Hai %s, selamat datang di Rogu!"
