@@ -19,13 +19,17 @@ from linebot.exceptions import (
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     SourceUser, SourceGroup, SourceRoom,
-    TemplateSendMessage, ConfirmTemplate, MessageTemplateAction,
-    ButtonsTemplate, URITemplateAction, PostbackTemplateAction,
+    TemplateSendMessage, ConfirmTemplate, MessageAction, MessageTemplateAction,
+    ButtonsTemplate, ImageCarouselTemplate, ImageCarouselColumn, URIAction, URITemplateAction,
+    PostbackTemplateAction, DatetimePickerAction,
+    CameraAction, CameraRollAction, LocationAction,
     CarouselTemplate, CarouselColumn, PostbackEvent,
     StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
-    ImageMessage, VideoMessage, AudioMessage,
+    ImageMessage, VideoMessage, AudioMessage, FileMessage,
     UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent,
-    FlexSendMessage, FlexContainer, BubbleContainer, BoxComponent, TextComponent
+    FlexSendMessage, CarouselContainer, BubbleContainer, ImageComponent, BoxComponent,
+    TextComponent, SpacerComponent, IconComponent, ButtonComponent,
+    SeparatorComponent, QuickReply, QuickReplyButton
 )
 
 app = Flask(__name__)
@@ -166,121 +170,62 @@ def handle_text_message(event):
         if 'status' in session and session['status'] == "home":
             print("HERE, home")
 
-            # flex_message = FlexSendMessage(
-            #     altText="Flex Message", 
-            #     contents=FlexContainer(
-            #         type="carousel",
-            #         contents=[
-            #             BubbleContainer(
-            #                 type="bubble",
-            #                 hero=ImageMessage(
-            #                     type="image",
-            #                     url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
-            #                     size="full",
-            #                     aspectRatio="20:13",
-            #                     aspectMode="cover"
-            #                 ),
-            #                 body=BoxComponent(
-            #                     type="box",
-            #                     layout="vertical",
-            #                     action=MessageTemplateAction(
-            #                         type="message",
-            #                         label="Matematika",
-            #                         text="Matematika"
-            #                     ),
-            #                     contents=[
-            #                         TextComponent(
-            #                             type="text",
-            #                             text="Matematika",
-            #                             size="xl",
-            #                             align="center",
-            #                             weight="bold"
-            #                         )
-            #                     ]
-            #                 )
-            #             ),
-            #             # "https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg"
-            #             # "Bahasa Indonesia"
-            #         ]
-            #     )
-            # )
-            # line_bot_api.reply_message(event.reply_token, flex_message)
-
-            flex_message = [
-                {
-                    "type": "flex",
-                    "altText": "Flex Message",
-                    "contents": {
-                        "type": "carousel",
-                        "contents": [
-                            {
-                                "type": "bubble",
-                                "hero": {
-                                    "type": "image",
-                                    "url": "https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
-                                    "size": "full",
-                                    "aspectRatio": "20:13",
-                                    "aspectMode": "cover"
-                                },
-                                "body": {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "action": {
-                                        "type": "message",
-                                        "label": "Matematika",
-                                        "text": "Matematika"
-                                    },
-                                    "contents": [
-                                        {
-                                            "type": "text",
-                                            "text": "Matematika",
-                                            "size": "xl",
-                                            "align": "center",
-                                            "weight": "bold"
-                                        }
-                                    ]
-                                }
-                            },
-                            {
-                                "type": "bubble",
-                                "hero": {
-                                    "type": "image",
-                                    "url": "https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg",
-                                    "align": "center",
-                                    "gravity": "center",
-                                    "size": "full",
-                                    "aspectRatio": "20:13",
-                                    "aspectMode": "cover",
-                                    "action": {
-                                        "type": "uri",
-                                        "label": "Line",
-                                        "uri": "https://linecorp.com/"
-                                    }
-                                },
-                                "body": {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "action": {
-                                        "type": "message",
-                                        "label": "Bahasa Indonesia",
-                                        "text": "Bahasa Indonesia"
-                                    },
-                                    "contents": [
-                                        {
-                                            "type": "text",
-                                            "text": "Bahasa Indonesia",
-                                            "size": "xl",
-                                            "align": "center",
-                                            "weight": "bold"
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    }
-                }
-            ]
-            line_bot_api.reply_message(event.reply_token, flex_message)
+            carousel = CarouselContainer(
+                contents=[
+                    BubbleContainer(
+                        direction='ltr',
+                        hero=ImageComponent(
+                            url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
+                            size="full",
+                            aspectRatio="20:13",
+                            aspectMode="cover",
+                            action=URIAction(
+                                uri='http://example.com',
+                                label='label'
+                            )
+                        ),
+                        body=BoxComponent(
+                            layout="vertical",
+                            contents=[
+                                TextComponent(
+                                    type="text",
+                                    text="Matematika",
+                                    size="xl",
+                                    align="center",
+                                    weight="bold"
+                                )
+                            ]
+                        )
+                    ),
+                    BubbleContainer(
+                        direction='ltr',
+                        hero=ImageComponent(
+                            url="https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg",
+                            size="full",
+                            aspectRatio="20:13",
+                            aspectMode="cover",
+                            action=URIAction(
+                                uri='http://example.com',
+                                label='label'
+                            )
+                        ),
+                        body=BoxComponent(
+                            layout="vertical",
+                            contents=[
+                                TextComponent(
+                                    type="text",
+                                    text="Bahasa Indonesia",
+                                    size="xl",
+                                    align="center",
+                                    weight="bold"
+                                )
+                            ]
+                        )
+                    )
+                ]
+            )
+            flex_message = FlexSendMessage(alt_text="Flex Message", contents=carousel)
+            line_bot_api.reply_message(event.reply_token, flex_message)        
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
 
@@ -296,6 +241,67 @@ def test_db():
         print("HERE Email = ", row["email"])
         print("HERE Name = ", row["name"], "\n")
 
+    return 'OK'
+
+@app.route("/test_template", methods=['GET'])
+def test_template():
+    carousel = CarouselContainer(
+        contents=[
+            BubbleContainer(
+                direction='ltr',
+                hero=ImageComponent(
+                    url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
+                    size="full",
+                    aspectRatio="20:13",
+                    aspectMode="cover",
+                    action=URIAction(
+                        uri='http://example.com',
+                        label='label'
+                    )
+                ),
+                body=BoxComponent(
+                    layout="vertical",
+                    contents=[
+                        TextComponent(
+                            type="text",
+                            text="Matematika",
+                            size="xl",
+                            align="center",
+                            weight="bold"
+                        )
+                    ]
+                )
+            ),
+            BubbleContainer(
+                direction='ltr',
+                hero=ImageComponent(
+                    url="https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg",
+                    size="full",
+                    aspectRatio="20:13",
+                    aspectMode="cover",
+                    action=URIAction(
+                        uri='http://example.com',
+                        label='label'
+                    )
+                ),
+                body=BoxComponent(
+                    layout="vertical",
+                    contents=[
+                        TextComponent(
+                            type="text",
+                            text="Bahasa Indonesia",
+                            size="xl",
+                            align="center",
+                            weight="bold"
+                        )
+                    ]
+                )
+            )
+        ]
+    )
+    flex_message = FlexSendMessage(alt_text="Flex Message", contents=carousel)
+    print("HERE, flex_message:", flex_message)
+    
     return 'OK'
 
 if __name__ == "__main__":
