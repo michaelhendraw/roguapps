@@ -114,7 +114,7 @@ def handle_text_message(event):
                 dob = texts[1]
                 if util.validate_date(dob,"%d%m%Y"):
                     query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
-                    conn.query(query_select, (code, convert_date(dob,"%d%m%Y","%Y-%m-%d")))
+                    conn.query(query_select, (code, util.convert_date(dob,"%d%m%Y","%Y-%m-%d")))
                     row = conn.cursor.fetchone()
                     if row == None:
                         print("HERE session after:",session)
