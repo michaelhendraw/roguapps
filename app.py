@@ -75,7 +75,22 @@ def handle_text_message(event):
 
     print("HERE session before:",session)
     if 'user_id' not in session:
-        if session['status'] == "login":
+        if 'status' not in session:
+            session['status'] = "login"
+            print("HERE session after:",session)
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextMessage(
+                        text=constant.WELCOME_APP
+                    ),
+                    TextMessage(
+                        text=constant.LOGIN
+                    )
+                ]
+            )
+        else:
             query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
             conn.query(query_select, (text))
             row = conn.cursor.fetchone()
@@ -111,21 +126,6 @@ def handle_text_message(event):
                         )
                     ]
                 )
-        else:
-            session['status'] = "login"
-            print("HERE session after:",session)
-
-            line_bot_api.reply_message(
-                event.reply_token,
-                [
-                    TextMessage(
-                        text=constant.WELCOME_APP
-                    ),
-                    TextMessage(
-                        text=constant.LOGIN
-                    )
-                ]
-            )
     else:
         if text == 'profile':
             if isinstance(event.source, SourceUser):
