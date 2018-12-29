@@ -6,7 +6,7 @@ import sys
 import model
 
 from argparse import ArgumentParser
-from flask import Flask, request, abort, session, redirect, url_for, escape
+from flask import session, Flask, request, abort, redirect, url_for, escape
 from linebot import (
     LineBotApi, WebhookHandler, WebhookParser
 )
@@ -46,6 +46,7 @@ parser = WebhookParser(LINE_CHANNEL_SECRET)
 def callback():
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
+    print("signature:",signature)
 
     # get request body as text
     body = request.get_data(as_text=True)
@@ -68,7 +69,9 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
+    print("before condition")
     if 'user_id' not in session:
+        print("if")
         flex_template = [
             {
                 "type": "flex",
@@ -107,13 +110,11 @@ def handle_text_message(event):
         )
         line_bot_api.reply_message(event.reply_token,template_message)
     else:
+        print("else")
         user_id = session['user_id']
         name = session['name']
 
         text = event.message.text
-        session = getattr(g, 'session', None)
-        print("handle")
-        print(session)
 
         if text == 'profile':
             if isinstance(event.source, SourceUser):
