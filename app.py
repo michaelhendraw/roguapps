@@ -50,7 +50,7 @@ def callback():
 
     # get request body as text
     body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
+    print("Request body: " + body)
 
     # handle webhook body
     try:
@@ -72,38 +72,41 @@ def handle_text_message(event):
     print("before condition")
     if 'user_id' not in session:
         print("if")
-        flex_template = [
-            {
-                "type": "flex",
-                "altText": "Flex Message",
-                "contents": {
-                    "type": "bubble",
-                    "direction": "ltr",
-                    "body": {
-                        "type": "box",
-                        "layout": "vertical",
-                        "contents": [
-                            {
-                                "type": "image",
-                                "url": "https://image.myanimelist.net/ui/MHaOlBrkklS2yN3DPEI1ddb2Rqt4zhkv87ApMNn9H2w",
-                                "align": "center",
-                                "gravity": "center",
-                                "size": "full",
-                                "aspectRatio": "20:13",
-                                "aspectMode": "fit"
-                            },
-                            {
-                                "type": "text",
-                                "text": "Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
-                                "align": "center",
-                                "gravity": "center",
-                                "wrap": "true"
-                            }
-                        ]
-                    }
-                }
-            }
-        ]
+        # flex_template = [
+            # {
+            #     "type": "flex",
+            #     "altText": "Flex Message",
+            #     "contents": {
+            #         "type": "bubble",
+            #         "direction": "ltr",
+            #         "body": {
+            #             "type": "box",
+            #             "layout": "vertical",
+            #             "contents": [
+            #                 {
+            #                     "type": "image",
+            #                     "url": "https://image.myanimelist.net/ui/MHaOlBrkklS2yN3DPEI1ddb2Rqt4zhkv87ApMNn9H2w",
+            #                     "align": "center",
+            #                     "gravity": "center",
+            #                     "size": "full",
+            #                     "aspectRatio": "20:13",
+            #                     "aspectMode": "fit"
+            #                 },
+            #                 {
+            #                     "type": "text",
+            #                     "text": "Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
+            #                     "align": "center",
+            #                     "gravity": "center",
+            #                     "wrap": "true"
+            #                 }
+            #             ]
+            #         }
+            #     }
+            # }
+        # ]
+        flex_template = TextSendMessage(
+                            text="Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
+                        )
         template_message = TemplateSendMessage(
             alt_text='Flex Message',
             template=flex_template
