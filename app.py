@@ -4,6 +4,7 @@ import os
 import sys
 
 import model
+import constant
 
 from argparse import ArgumentParser
 from flask import session, Flask, request, abort, redirect, url_for, escape
@@ -29,8 +30,8 @@ app.secret_key = 'ROGUAPPS'
 
 # get LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN from the environment variable
 
-LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET', None)
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
+LINE_CHANNEL_SECRET = constant.LINE_CHANNEL_SECRET
+LINE_CHANNEL_ACCESS_TOKEN = constant.LINE_CHANNEL_ACCESS_TOKEN
 if LINE_CHANNEL_SECRET is None:
     print('Specify LINE_CHANNEL_SECRET as environment variable.')
     sys.exit(1)
@@ -46,81 +47,86 @@ parser = WebhookParser(LINE_CHANNEL_SECRET)
 def callback():
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
-    print("signature:",signature)
 
     # get request body as text
     body = request.get_data(as_text=True)
-    print("Request body: " + body)
 
     # handle webhook body
     try:
         events = parser.parse(body, signature)
-        user_id = events.pop().source.user_id
-        print("user_id line:", user_id)
+        
+        print("signature:",signature)
+        print("request body:",body)
+        
         handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
 
     return 'OK'
 
-# @app.after_request
-# def after_request(response):
-#     return response
-
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
-    print("before condition")
+    conn = model.Conn()
+
+    text = event.message.text
+
+    line_user_id = event.pop().source.user_id
+    session['line_user_id'] = line_user_id
+
+    print("session before:",session)
     if 'user_id' not in session:
-        print("if")
-        # flex_template = [
-            # {
-            #     "type": "flex",
-            #     "altText": "Flex Message",
-            #     "contents": {
-            #         "type": "bubble",
-            #         "direction": "ltr",
-            #         "body": {
-            #             "type": "box",
-            #             "layout": "vertical",
-            #             "contents": [
-            #                 {
-            #                     "type": "image",
-            #                     "url": "https://image.myanimelist.net/ui/MHaOlBrkklS2yN3DPEI1ddb2Rqt4zhkv87ApMNn9H2w",
-            #                     "align": "center",
-            #                     "gravity": "center",
-            #                     "size": "full",
-            #                     "aspectRatio": "20:13",
-            #                     "aspectMode": "fit"
-            #                 },
-            #                 {
-            #                     "type": "text",
-            #                     "text": "Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
-            #                     "align": "center",
-            #                     "gravity": "center",
-            #                     "wrap": "true"
-            #                 }
-            #             ]
-            #         }
-            #     }
-            # }
-        # ]
-        # template_message = TemplateSendMessage(
-        #     alt_text='Flex Message',
-        #     template=flex_template
-        # )
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextMessage(
-                text="Hai ! Selamat datang di Rogu. Silahkan masukkan NIS Kamu untuk melanjutkan belajar !",
+        if session['status'] == "":
+            session['status'] = "login"
+            print("session after:",session)
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextMessage(
+                        text=constant.WELCOME_APP
+                    ),
+                    TextMessage(
+                        text=constant.LOGIN
+                    )
+                ]
             )
-        )
+        elif session['status'] == "login":
+            query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
+            conn.query(query_select, (text))
+            row = conn.cursor.fetchone()
+            if row == None:
+                print("session after:",session)
+
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    [
+                        TextMessage(
+                            text=constant.LOGIN_FAIL
+                        ),
+                        TextMessage(
+                            text=constant.LOGIN
+                        )
+                    ]
+                )
+            else:
+                session['user_id'] = row["id"]
+                session['code'] = row["code"]
+                session['line_code'] = row["line_code"]
+                session['name'] = row["name"]
+                session['class_id'] = row["class_id"]
+
+                session['status'] = "home"
+                print("session after:",session)
+                
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    [
+                        TextMessage(
+                            text=constant.WELCOME_LOGIN % (session['name']),
+                        )
+                    ]
+                )
     else:
-        print("else")
-        user_id = session['user_id']
-        name = session['name']
-
-        text = event.message.text
-
         if text == 'profile':
             if isinstance(event.source, SourceUser):
                 profile = line_bot_api.get_profile(event.source.user_id)
@@ -193,9 +199,9 @@ def handle_text_message(event):
         elif text == 'imagemap':
             pass
         else:
-            session['status'] = event.message.text
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text=event.message.text))
+                event.reply_token, TextSendMessage(text=event.message.text)
+            )
 
 @app.route("/test_db", methods=['GET'])
 def test_db():
