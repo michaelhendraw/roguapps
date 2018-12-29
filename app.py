@@ -54,7 +54,7 @@ def callback():
     # handle webhook body
     try:
         events = parser.parse(body, signature)
-        line_user_id = event.pop().source.user_id
+        line_user_id = events.pop().source.user_id
         session['line_user_id'] = line_user_id
         
         print("signature:",signature)
