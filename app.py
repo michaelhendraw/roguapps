@@ -350,8 +350,8 @@ def create_rich_menu(line_user_id):
             height=843
         ),
         selected=False,
-        name='Navigasi Home',
-        chat_bar_text='Navigasi Home',
+        name='Home',
+        chat_bar_text='Home',
         areas=[
             RichMenuArea(
                 bounds=RichMenuBounds(
@@ -392,8 +392,8 @@ def create_rich_menu(line_user_id):
             height=843
         ),
         selected=False,
-        name='Navigasi Material',
-        chat_bar_text='Navigasi Material',
+        name='Materi',
+        chat_bar_text='Materi',
         areas=[
             RichMenuArea(
                 bounds=RichMenuBounds(
@@ -434,8 +434,8 @@ def create_rich_menu(line_user_id):
             height=843
         ),
         selected=False,
-        name='Navigasi Material Topic',
-        chat_bar_text='Navigasi Material Topic',
+        name='Belajar',
+        chat_bar_text='Belajar',
         areas=[
             RichMenuArea(
                 bounds=RichMenuBounds(
@@ -489,8 +489,8 @@ def create_rich_menu(line_user_id):
             height=843
         ),
         selected=False,
-        name='Navigasi Material Quiz',
-        chat_bar_text='Navigasi Material Quiz',
+        name='Latihan Soal',
+        chat_bar_text='Latihan Soal',
         areas=[
             RichMenuArea(
                 bounds=RichMenuBounds(
@@ -544,8 +544,8 @@ def create_rich_menu(line_user_id):
             height=843
         ),
         selected=False,
-        name='Navigasi Material Discussion',
-        chat_bar_text='Navigasi Material Discussion',
+        name='Diskusi',
+        chat_bar_text='Diskusi',
         areas=[
             RichMenuArea(
                 bounds=RichMenuBounds(
@@ -599,8 +599,8 @@ def create_rich_menu(line_user_id):
             height=843
         ),
         selected=False,
-        name='Navigasi Final Quiz',
-        chat_bar_text='Navigasi Final Quiz',
+        name='Latihan UN',
+        chat_bar_text='Latihan UN',
         areas=[
             RichMenuArea(
                 bounds=RichMenuBounds(
