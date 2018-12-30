@@ -30,11 +30,11 @@ from linebot.models import (
     FlexSendMessage, CarouselContainer, BubbleContainer, ImageComponent, BoxComponent,
     TextComponent, SpacerComponent, IconComponent, ButtonComponent,
     SeparatorComponent, QuickReply, QuickReplyButton,
-    RichMenuSize, RichMenuArea, RichMenuBounds
+    RichMenu, RichMenuSize, RichMenuArea, RichMenuBounds
 )
 
 app = Flask(__name__)
-app.secret_key = 'ROGUAPP2'
+app.secret_key = 'ROGUAPP3'
 
 rich_menu = {}
 
