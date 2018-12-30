@@ -60,7 +60,9 @@ def callback():
 
     # handle webhook body
     try:
+        print('HERE, session before:', session)
         handler.handle(body, signature)
+        print('HERE, session after:', session)
     except InvalidSignatureError:
         abort(400)
 
@@ -70,7 +72,7 @@ def callback():
 def handle_text_message(event):
     conn = model.Conn()
 
-    print('HERE request event:', event)
+    print('HERE, request event:', event)
 
     line_user_id = event.source.user_id
     text = event.message.text
@@ -78,23 +80,19 @@ def handle_text_message(event):
     # create session for first user
     if line_user_id not in session:
         session[line_user_id] = {
-                                    'user_id':'',
-                                    'code':'',
-                                    'name':'',
-                                    'class_id':'',
-                                    'status':''
-                                }
-
-    print('HERE session before:', session)
+            'user_id':'',
+            'code':'',
+            'name':'',
+            'class_id':'',
+            'status':''
+        }
     
-    if not session[line_user_id]['user_id']: # belum login
-        if not session[line_user_id]['status']: # baru join
+    if not session[line_user_id]['user_id']: # BELUM LOGIN
+        if not session[line_user_id]['status']: # BARU JOIN
             session[line_user_id]['status'] = 'login'
-            print('HERE session after:', session)
-
+            
             line_bot_api.reply_message(
-                event.reply_token,
-                [
+                event.reply_token,[
                     TextMessage(
                         text=constant.WELCOME_APP
                     ),
@@ -103,16 +101,13 @@ def handle_text_message(event):
                     )
                 ]
             )
-        elif 'login' in session[line_user_id]['status']: # proses login
+        elif 'login' in session[line_user_id]['status']: # PROSES LOGIN
             text = text.replace(' ', '')
             texts = text.split('-')
 
-            if len(texts) != 2:
-                print('HERE session after:', session)
-
+            if len(texts) != 2: # VALIDASI LOGIN GAGAL
                 line_bot_api.reply_message(
-                    event.reply_token,
-                    [
+                    event.reply_token,[
                         TextMessage(
                             text=constant.LOGIN_VALIDATION_FAIL
                         ),
@@ -128,12 +123,9 @@ def handle_text_message(event):
                     query_select = 'SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1'
                     conn.query(query_select, (code, util.convert_date(dob,'%d%m%Y','%Y-%m-%d')))
                     row = conn.cursor.fetchone()
-                    if row == None:
-                        print('HERE session after:',session)
-
+                    if row == None: # LOGIN GAGAL
                         line_bot_api.reply_message(
-                            event.reply_token,
-                            [
+                            event.reply_token,[
                                 TextMessage(
                                     text=constant.LOGIN_FAIL
                                 ),
@@ -142,30 +134,25 @@ def handle_text_message(event):
                                 )
                             ]
                         )
-                    else:
+                    else: # LOGIN BERHASIL
                         session[line_user_id] = {
-                                    'user_id':row['id'],
-                                    'code':row['code'],
-                                    'name':row['name'],
-                                    'class_id':row['class_id'],
-                                    'status':'home'
-                                }
-                        print('HERE session after:',session)
+                            'user_id':row['id'],
+                            'code':row['code'],
+                            'name':row['name'],
+                            'class_id':row['class_id'],
+                            'status':'home'
+                        }
                         
                         line_bot_api.reply_message(
-                            event.reply_token,
-                            [
+                            event.reply_token,[
                                 TextMessage(
                                     text=constant.WELCOME_HOME % (session[line_user_id]['name']),
                                 )
                             ]
                         )
-                else:
-                    print('HERE session after:',session)
-
+                else:  # VALIDASI LOGIN GAGAL
                     line_bot_api.reply_message(
-                        event.reply_token,
-                        [
+                        event.reply_token,[
                             TextMessage(
                                 text=constant.LOGIN_VALIDATION_FAIL
                             ),
@@ -175,68 +162,62 @@ def handle_text_message(event):
                         ]
                     )
     else: # sudah login
-        if 'home' in session[line_user_id]['status']:
-            print('HERE, home')
-            print('LAST HERE, append from db')
-
-            carousel = CarouselContainer(
-                contents=[
-                    BubbleContainer(
+        if 'home' in session[line_user_id]['status']: # home
+            # get all subject by class_id
+            query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
+            conn.query(query_select, (session[line_user_id]['class_id'],))
+            rows = conn.cursor.fetchall()
+            if rows == None: # subject is empty
+                line_bot_api.reply_message(
+                    event.reply_token,[
+                        TextMessage(
+                            text=constant.SUBJECT_EMPTY
+                        )
+                    ]
+                )
+            else: # subject exist
+                contents = []
+                for row in rows:
+                    contents.append(BubbleContainer(
                         direction='ltr',
                         hero=ImageComponent(
-                            url='https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg',
+                            url=row['image'],
                             size='full',
                             aspect_ratio='20:13',
-                            aspect_mode='cover',
-                            action=PostbackTemplateAction(
-                                uri='http://example.com',
-                                label='label'
-                            )
+                            aspect_mode='cover'
                         ),
                         body=BoxComponent(
                             layout='vertical',
                             contents=[
-                                TextComponent(
-                                    type='text',
-                                    text='Matematika',
-                                    size='xl',
-                                    align='center',
-                                    weight='bold'
-                                )
+                                ButtonComponent(
+                                    action=PostbackTemplateAction(
+                                        label='Materi',
+                                        text='Materi',
+                                        data='subject='+str(row['id'])+'&type=materi'
+                                    )
+                                ),
+                                ButtonComponent(
+                                    action=PostbackTemplateAction(
+                                        label='Latihan UN',
+                                        text='Latihan UN',
+                                        data='subject='+str(row['id'])+'&type=latihan_un'
+                                    )
+                                ),
                             ]
                         )
-                    ),
-                    BubbleContainer(
-                        direction='ltr',
-                        hero=ImageComponent(
-                            url='https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg',
-                            size='full',
-                            aspect_ratio='20:13',
-                            aspect_mode='cover',
-                            action=URIAction(
-                                uri='http://example.com',
-                                label='label'
-                            )
-                        ),
-                        body=BoxComponent(
-                            layout='vertical',
-                            contents=[
-                                TextComponent(
-                                    type='text',
-                                    text='Bahasa Indonesia',
-                                    size='xl',
-                                    align='center',
-                                    weight='bold'
-                                )
-                            ]
-                        )
+                    ))
+                
+                flex_message = FlexSendMessage(
+                    alt_text='Carousel Mapel',
+                    contents=CarouselContainer(
+                        contents=contents
                     )
-                ]
-            )
-            flex_message = FlexSendMessage(alt_text='Carousel Mapel', contents=carousel)
-            line_bot_api.reply_message(event.reply_token, flex_message)        
+                )
+                line_bot_api.reply_message(event.reply_token, flex_message)        
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
+
+# --------------------------------------------------------
 
 @app.route('/test_db', methods=['GET'])
 def test_db():
@@ -247,15 +228,64 @@ def test_db():
     rows = conn.cursor.fetchall()
 
     for row in rows:
-        print('HERE Email = ', row['email'])
-        print('HERE Name = ', row['name'], '\n')
+        print('HERE, Email = ', row['email'])
+        print('HERE, Name = ', row['name'], '\n')
 
     return 'OK'
 
 @app.route('/test_template', methods=['GET'])
 def test_template():
-    carousel = ''
-    flex_message = FlexSendMessage(alt_text='Flex Message', contents=carousel)
+    conn = model.Conn()
+
+    query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
+    conn.query(query_select, (1,))
+    rows = conn.cursor.fetchall()
+    if rows == None: # subject is empty
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text=constant.SUBJECT_EMPTY
+                )
+            ]
+        )
+    else: # subject exist
+        contents = []
+        for row in rows:
+            contents.append(BubbleContainer(
+                direction='ltr',
+                hero=ImageComponent(
+                    url=row['image'],
+                    size='full',
+                    aspect_ratio='20:13',
+                    aspect_mode='cover'
+                ),
+                body=BoxComponent(
+                    layout='vertical',
+                    contents=[
+                        ButtonComponent(
+                            action=PostbackTemplateAction(
+                                label='Materi',
+                                text='Materi',
+                                data='subject='+str(row['id'])+'&type=materi'
+                            )
+                        ),
+                        ButtonComponent(
+                            action=PostbackTemplateAction(
+                                label='Latihan UN',
+                                text='Latihan UN',
+                                data='subject='+str(row['id'])+'&type=latihan_un'
+                            )
+                        ),
+                    ]
+                )
+            ))
+
+        flex_message = FlexSendMessage(
+            alt_text='Carousel Mapel',
+            contents=CarouselContainer(
+                contents=contents
+            )
+        )
     print('HERE, flex_message:', flex_message)
     
     return 'OK'
@@ -278,6 +308,8 @@ def test_session():
     print('session 2:', session)
     
     return 'OK'
+
+# --------------------------------------------------------
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

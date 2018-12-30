@@ -12,3 +12,4 @@ def validate_date(date_text, date_format):
 
 def convert_date(date_text, date_format_before, date_format_after):
     return datetime.datetime.strptime(date_text, date_format_before).strftime(date_format_after)
+
