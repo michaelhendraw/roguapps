@@ -75,6 +75,10 @@ def handle_text_message(event):
     line_user_id = event.source.user_id
     text = event.message.text
 
+    # create session for first user
+    if session[line_user_id] not in session:
+        session[line_user_id] = []
+
     print("HERE session before:",session)
     
     if session[line_user_id]['user_id'] not in session[line_user_id]:
