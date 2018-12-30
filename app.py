@@ -77,13 +77,12 @@ def handle_text_message(event):
 
     # create session for first user
     if line_user_id not in session:
-        session[line_user_id]['user_id'] = None
-        session[line_user_id]['status'] = None
+        session[line_user_id] = {}
 
     print("HERE session before:", session)
     
-    if session[line_user_id]['user_id'] is None:
-        if session[line_user_id]['status'] is None:
+    if 'user_id' not in session[line_user_id]:
+        if 'status' not in session[line_user_id]:
             session[line_user_id]['status'] = "login"
             print("HERE session after:", session)
 
@@ -252,6 +251,25 @@ def test_template():
     carousel = ""
     flex_message = FlexSendMessage(alt_text="Flex Message", contents=carousel)
     print("HERE, flex_message:", flex_message)
+    
+    return 'OK'
+
+@app.route('/test_session')
+def test_session():
+    line_user_id = 123
+    
+    if line_user_id not in session:
+        print("if 263")
+        session[line_user_id] = {}
+    
+    print("session 1:", session)        
+    
+    if 'user_id' not in session[line_user_id]:
+        print("if")
+    else:
+        print("else")
+        
+    print("session 2:", session)
     
     return 'OK'
 
