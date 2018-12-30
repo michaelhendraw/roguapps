@@ -6,7 +6,7 @@ LINE_CHANNEL_SECRET = 'd3ef65feda90d05d3e3058311667f920'
 DATABASE_URL = 'postgres://ibixvzxplfguzm:6a5eab8ebaa96974bdadcb163b67587c4809b707ea24dae904ff002e503ec399@ec2-54-225-150-216.compute-1.amazonaws.com:5432/dakvfptk0c0c1s'
 
 # IMAGE
-RICH_MENU_HOME = 'https://lh4.googleusercontent.com/BBD4Z2M8_zfZMftVaJ0VytClo-2dXK-dwPG6bLnPWOpTg1zAjaeHFahm2hLTA_Z2jqkGbKcQ9hUuJw=w1855-h953-rw'
+RICH_MENU_HOME = 'navi-home.png'
 
 # MESSAGES
 # LOGIN

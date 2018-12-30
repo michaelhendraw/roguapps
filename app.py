@@ -34,7 +34,7 @@ from linebot.models import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'ROGUAPP3'
+app.secret_key = 'ROGUAPP4'
 
 rich_menu = {}
 
@@ -327,6 +327,7 @@ def test_session():
 
 # --------------------------------------------------------
 
+# @app.route('/create_rich_menu')
 def create_rich_menu():
     global rich_menu
 
@@ -369,6 +370,8 @@ def create_rich_menu():
         ]
     )
     rich_menu['home'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+
+    print('HERE, rich_menu[home]:',rich_menu['home'])
 
     with open(constant.RICH_MENU_HOME, 'rb') as f:
         line_bot_api.set_rich_menu_image(rich_menu['home'], 'image/png', f)
