@@ -77,12 +77,13 @@ def handle_text_message(event):
 
     # create session for first user
     if line_user_id not in session:
-        session[line_user_id] = {}
+        session[line_user_id]['user_id'] = None
+        session[line_user_id]['status'] = None
 
     print("HERE session before:", session)
     
-    if session[line_user_id]['user_id'] not in session[line_user_id]:
-        if session[line_user_id]['status'] not in session[line_user_id]:
+    if session[line_user_id]['user_id'] is None:
+        if session[line_user_id]['status'] is None:
             session[line_user_id]['status'] = "login"
             print("HERE session after:", session)
 
