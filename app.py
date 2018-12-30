@@ -76,10 +76,10 @@ def handle_text_message(event):
     text = event.message.text
 
     # create session for first user
-    if session[line_user_id] not in session:
+    if line_user_id not in session:
         session[line_user_id] = []
 
-    print("HERE session before:",session)
+    print("HERE session before:", session)
     
     if session[line_user_id]['user_id'] not in session[line_user_id]:
         if session[line_user_id]['status'] not in session[line_user_id]:
