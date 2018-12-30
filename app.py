@@ -29,11 +29,14 @@ from linebot.models import (
     UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent,
     FlexSendMessage, CarouselContainer, BubbleContainer, ImageComponent, BoxComponent,
     TextComponent, SpacerComponent, IconComponent, ButtonComponent,
-    SeparatorComponent, QuickReply, QuickReplyButton
+    SeparatorComponent, QuickReply, QuickReplyButton,
+    RichMenuSize, RichMenuArea, RichMenuBounds
 )
 
 app = Flask(__name__)
 app.secret_key = 'ROGUAPP1'
+
+rich_menu = {}
 
 # get LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN from the environment variable
 
@@ -150,6 +153,19 @@ def handle_text_message(event):
                                 )
                             ]
                         )
+
+                        # doc: https://github.com/line/line-bot-sdk-python/blob/master/README.rst
+
+                        # create rich menu
+                        create_rich_menu()
+                        
+                        # set rich menu user
+                        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
+
+                        # get rich menu user
+                        rich_menu_id = ine_bot_api.get_rich_menu_id_of_user(line_user_id)
+                        print('HERE, user - rich menu:', line_user_id, rich_menu_id)
+
                 else:  # VALIDASI LOGIN GAGAL
                     line_bot_api.reply_message(
                         event.reply_token,[
@@ -310,6 +326,56 @@ def test_session():
     return 'OK'
 
 # --------------------------------------------------------
+
+def create_rich_menu():
+    global rich_menu
+
+    # home
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Navigasi Home',
+        chat_bar_text='Navigasi Home',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=48,
+                    y=36,
+                    width=1190,
+                    height=780
+                ),
+                action=PostbackTemplateAction(
+                    label='Materi',
+                    text='Materi',
+                    data='type=material'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=1290,
+                    y=44,
+                    width=1174,
+                    height=760
+                ),
+                action=PostbackTemplateAction(
+                    label='Latihan UN',
+                    text='Latihan UN',
+                    data='type=final_quiz'
+                )
+            ),
+        ]
+    )
+    rich_menu['home'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+
+    with open(constant.RICH_MENU_HOME, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['home'], 'image/png', f)
+
+    # 
+
+    return
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
