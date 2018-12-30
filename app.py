@@ -83,7 +83,7 @@ def handle_text_message(event):
     
     if 'user_id' not in session[line_user_id]:
         if 'status' not in session[line_user_id]:
-            session[line_user_id]['status'] = "login"
+            session[line_user_id]['status'].append("login")
             print("HERE session after:", session)
 
             line_bot_api.reply_message(
@@ -137,12 +137,11 @@ def handle_text_message(event):
                             ]
                         )
                     else:
-                        session[line_user_id]['user_id'] = row["id"]
-                        session[line_user_id]['code'] = row["code"]
-                        session[line_user_id]['name'] = row["name"]
-                        session[line_user_id]['class_id'] = row["class_id"]
-
-                        session[line_user_id]['status'] = "home"
+                        session[line_user_id]['user_id'].append(row["id"])
+                        session[line_user_id]['code'].append(row["code"])
+                        session[line_user_id]['name'].append(row["name"])
+                        session[line_user_id]['class_id'].append(row["class_id"])
+                        session[line_user_id]['status'].append("home")
                         print("HERE session after:",session)
                         
                         line_bot_api.reply_message(
@@ -168,7 +167,7 @@ def handle_text_message(event):
                         ]
                     )
     else:
-        if session[line_user_id]['status'] in session[line_user_id] and session[line_user_id]['status'] == "home":
+        if 'home' in session[line_user_id]['status']:
             print("HERE, home")
 
             print("LAST HERE, append from db")
