@@ -60,12 +60,6 @@ def callback():
 
     # handle webhook body
     try:
-        events = parser.parse(body, signature)
-        line_user_id = events.pop().source.user_id
-        session['line_user_id'] = line_user_id
-        
-        print("HERE request body:",body)
-        
         handler.handle(body, signature)
     except InvalidSignatureError:
         abort(400)
@@ -76,14 +70,17 @@ def callback():
 def handle_text_message(event):
     conn = model.Conn()
 
+    print("HERE request event:", event)
+
+    line_user_id = event.source.user_id
     text = event.message.text
 
     print("HERE session before:",session)
     
-    if 'user_id' not in session:
-        if 'status' not in session:
-            session['status'] = "login"
-            print("HERE session after:",session)
+    if session[line_user_id]['user_id'] not in session[line_user_id]:
+        if session[line_user_id]['status'] not in session[line_user_id]:
+            session[line_user_id]['status'] = "login"
+            print("HERE session after:", session)
 
             line_bot_api.reply_message(
                 event.reply_token,
@@ -101,7 +98,7 @@ def handle_text_message(event):
             texts = text.split("-")
 
             if len(texts) != 2:
-                print("HERE session after:",session)
+                print("HERE session after:", session)
 
                 line_bot_api.reply_message(
                     event.reply_token,
@@ -136,19 +133,19 @@ def handle_text_message(event):
                             ]
                         )
                     else:
-                        session['user_id'] = row["id"]
-                        session['code'] = row["code"]
-                        session['name'] = row["name"]
-                        session['class_id'] = row["class_id"]
+                        session[line_user_id]['user_id'] = row["id"]
+                        session[line_user_id]['code'] = row["code"]
+                        session[line_user_id]['name'] = row["name"]
+                        session[line_user_id]['class_id'] = row["class_id"]
 
-                        session['status'] = "home"
+                        session[line_user_id]['status'] = "home"
                         print("HERE session after:",session)
                         
                         line_bot_api.reply_message(
                             event.reply_token,
                             [
                                 TextMessage(
-                                    text=constant.WELCOME_HOME % (session['name']),
+                                    text=constant.WELCOME_HOME % (session[line_user_id]['name']),
                                 )
                             ]
                         )
@@ -167,8 +164,10 @@ def handle_text_message(event):
                         ]
                     )
     else:
-        if 'status' in session and session['status'] == "home":
+        if session[line_user_id]['status'] in session[line_user_id] and session[line_user_id]['status'] == "home":
             print("HERE, home")
+
+            print("LAST HERE, append from db")
 
             carousel = CarouselContainer(
                 contents=[
@@ -177,9 +176,9 @@ def handle_text_message(event):
                         hero=ImageComponent(
                             url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
                             size="full",
-                            aspectRatio="20:13",
-                            aspectMode="cover",
-                            action=URIAction(
+                            aspect_ratio="20:13",
+                            aspect_mode="cover",
+                            action=PostbackTemplateAction(
                                 uri='http://example.com',
                                 label='label'
                             )
@@ -202,8 +201,8 @@ def handle_text_message(event):
                         hero=ImageComponent(
                             url="https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg",
                             size="full",
-                            aspectRatio="20:13",
-                            aspectMode="cover",
+                            aspect_ratio="20:13",
+                            aspect_mode="cover",
                             action=URIAction(
                                 uri='http://example.com',
                                 label='label'
@@ -224,7 +223,7 @@ def handle_text_message(event):
                     )
                 ]
             )
-            flex_message = FlexSendMessage(alt_text="Flex Message", contents=carousel)
+            flex_message = FlexSendMessage(alt_text="Carousel Mapel", contents=carousel)
             line_bot_api.reply_message(event.reply_token, flex_message)        
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
@@ -245,60 +244,7 @@ def test_db():
 
 @app.route("/test_template", methods=['GET'])
 def test_template():
-    carousel = CarouselContainer(
-        contents=[
-            BubbleContainer(
-                direction='ltr',
-                hero=ImageComponent(
-                    url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
-                    size="full",
-                    aspectRatio="20:13",
-                    aspectMode="cover",
-                    action=URIAction(
-                        uri='http://example.com',
-                        label='label'
-                    )
-                ),
-                body=BoxComponent(
-                    layout="vertical",
-                    contents=[
-                        TextComponent(
-                            type="text",
-                            text="Matematika",
-                            size="xl",
-                            align="center",
-                            weight="bold"
-                        )
-                    ]
-                )
-            ),
-            BubbleContainer(
-                direction='ltr',
-                hero=ImageComponent(
-                    url="https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg",
-                    size="full",
-                    aspectRatio="20:13",
-                    aspectMode="cover",
-                    action=URIAction(
-                        uri='http://example.com',
-                        label='label'
-                    )
-                ),
-                body=BoxComponent(
-                    layout="vertical",
-                    contents=[
-                        TextComponent(
-                            type="text",
-                            text="Bahasa Indonesia",
-                            size="xl",
-                            align="center",
-                            weight="bold"
-                        )
-                    ]
-                )
-            )
-        ]
-    )
+    carousel = ""
     flex_message = FlexSendMessage(alt_text="Flex Message", contents=carousel)
     print("HERE, flex_message:", flex_message)
     
