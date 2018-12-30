@@ -34,7 +34,7 @@ from linebot.models import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'ROGUAPP4'
+app.secret_key = 'ROGUAPP6'
 
 rich_menu = {}
 
@@ -138,13 +138,16 @@ def handle_text_message(event):
                             ]
                         )
                     else: # LOGIN BERHASIL
-                        session[line_user_id] = {
-                            'user_id':row['id'],
-                            'code':row['code'],
-                            'name':row['name'],
-                            'class_id':row['class_id'],
-                            'status':'home'
-                        }
+                        session[line_user_id]['user_id'] = row['id']
+                        session[line_user_id]['code'] = row['code']
+                        session[line_user_id]['name'] = row['name']
+                        session[line_user_id]['class_id'] = row['class_id']
+                        session[line_user_id]['status'] = 'home'
+
+                        # create rich menu
+                        create_rich_menu(line_user_id)
+                        
+                        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
                         
                         line_bot_api.reply_message(
                             event.reply_token,[
@@ -153,18 +156,6 @@ def handle_text_message(event):
                                 )
                             ]
                         )
-
-                        # doc: https://github.com/line/line-bot-sdk-python/blob/master/README.rst
-
-                        # create rich menu
-                        create_rich_menu()
-                        
-                        # set rich menu user
-                        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
-
-                        # get rich menu user
-                        rich_menu_id = line_bot_api.get_rich_menu_id_of_user(line_user_id)
-                        print('HERE, user - rich menu:', line_user_id, rich_menu_id)
 
                 else:  # VALIDASI LOGIN GAGAL
                     line_bot_api.reply_message(
@@ -179,6 +170,18 @@ def handle_text_message(event):
                     )
     else: # sudah login
         if 'home' in session[line_user_id]['status']: # home
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
+                        
+            line_bot_api.reply_message(
+                event.reply_token,[
+                    TextMessage(
+                        text=constant.WELCOME_HOME % (session[line_user_id]['name']),
+                    )
+                ]
+            )
+        elif 'material' in session[line_user_id]['status']: # material
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material'])
+
             # get all subject by class_id
             query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
             conn.query(query_select, (session[line_user_id]['class_id'],))
@@ -229,7 +232,15 @@ def handle_text_message(event):
                         contents=contents
                     )
                 )
-                line_bot_api.reply_message(event.reply_token, flex_message)        
+                line_bot_api.reply_message(event.reply_token, flex_message)            
+        elif 'material_topic' in session[line_user_id]['status']: # material_topic
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_topic'])
+        elif 'material_quiz' in session[line_user_id]['status']: # material_quiz
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+        elif 'material_discussion' in session[line_user_id]['status']: # material_discussion
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+        elif 'final_quiz' in session[line_user_id]['status']: # final_quiz
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['final_quiz'])
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
 
@@ -327,8 +338,9 @@ def test_session():
 
 # --------------------------------------------------------
 
-# @app.route('/create_rich_menu')
-def create_rich_menu():
+def create_rich_menu(line_user_id):
+    # doc: https://github.com/line/line-bot-sdk-python/blob/master/README.rst
+
     global rich_menu
 
     # home
@@ -370,13 +382,257 @@ def create_rich_menu():
         ]
     )
     rich_menu['home'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
-
-    print('HERE, rich_menu[home]:',rich_menu['home'])
-
     with open(constant.RICH_MENU_HOME, 'rb') as f:
         line_bot_api.set_rich_menu_image(rich_menu['home'], 'image/png', f)
 
-    # 
+    # material
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Navigasi Material',
+        chat_bar_text='Navigasi Material',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=28,
+                    y=32,
+                    width=587,
+                    height=784
+                ),
+                action=PostbackTemplateAction(
+                    label='Kembali',
+                    text='Kembali',
+                    data='type=home'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=651,
+                    y=32,
+                    width=1817,
+                    height=788
+                ),
+                action=PostbackTemplateAction(
+                    label='Latihan UN',
+                    text='Latihan UN',
+                    data='type=final_quiz'
+                )
+            ),
+        ]
+    )
+    rich_menu['material'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_MATERIAL, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['material'], 'image/png', f)
+
+    # material_topic
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Navigasi Material Topic',
+        chat_bar_text='Navigasi Material Topic',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=38,
+                    y=40,
+                    width=579,
+                    height=776
+                ),
+                action=PostbackTemplateAction(
+                    label='Kembali',
+                    text='Kembali',
+                    data='type=material'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=655,
+                    y=36,
+                    width=880,
+                    height=780
+                ),
+                action=PostbackTemplateAction(
+                    label='Latihan Soal',
+                    text='Latihan Soal',
+                    data='type=material_quiz'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=1584,
+                    y=36,
+                    width=880,
+                    height=784
+                ),
+                action=PostbackTemplateAction(
+                    label='Diskusi',
+                    text='Diskusi',
+                    data='type=material_quiz'
+                )
+            ),
+        ]
+    )
+    rich_menu['material_topic'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_MATERIAL_TOPIC, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['material_topic'], 'image/png', f)
+
+    # material_quiz
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Navigasi Material Quiz',
+        chat_bar_text='Navigasi Material Quiz',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=38,
+                    y=40,
+                    width=579,
+                    height=776
+                ),
+                action=PostbackTemplateAction(
+                    label='Kembali',
+                    text='Kembali',
+                    data='type=material'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=655,
+                    y=36,
+                    width=880,
+                    height=780
+                ),
+                action=PostbackTemplateAction(
+                    label='Belajar',
+                    text='Belajar',
+                    data='type=material_topic'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=1584,
+                    y=36,
+                    width=880,
+                    height=784
+                ),
+                action=PostbackTemplateAction(
+                    label='Diskusi',
+                    text='Diskusi',
+                    data='type=material_discussion'
+                )
+            ),
+        ]
+    )
+    rich_menu['material_quiz'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_MATERIAL_QUIZ, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['material_quiz'], 'image/png', f)
+    
+    # material_discussion
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Navigasi Material Discussion',
+        chat_bar_text='Navigasi Material Discussion',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=38,
+                    y=40,
+                    width=579,
+                    height=776
+                ),
+                action=PostbackTemplateAction(
+                    label='Kembali',
+                    text='Kembali',
+                    data='type=material'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=655,
+                    y=36,
+                    width=880,
+                    height=780
+                ),
+                action=PostbackTemplateAction(
+                    label='Belajar',
+                    text='Belajar',
+                    data='type=material_topic'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=1584,
+                    y=36,
+                    width=880,
+                    height=784
+                ),
+                action=PostbackTemplateAction(
+                    label='Latihan Soal',
+                    text='Latihan Soal',
+                    data='type=material_quiz'
+                )
+            ),
+        ]
+    )
+    rich_menu['material_discussion'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_MATERIAL_DISCUSSION, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['material_discussion'], 'image/png', f)
+
+    # final_quiz
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Navigasi Final Quiz',
+        chat_bar_text='Navigasi Final Quiz',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=28,
+                    y=32,
+                    width=587,
+                    height=784
+                ),
+                action=PostbackTemplateAction(
+                    label='Kembali',
+                    text='Kembali',
+                    data='type=home'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=651,
+                    y=32,
+                    width=1817,
+                    height=788
+                ),
+                action=PostbackTemplateAction(
+                    label='Materi',
+                    text='Materi',
+                    data='type=material'
+                )
+            ),
+        ]
+    )
+    rich_menu['final_quiz'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_FINAL_QUIZ, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['final_quiz'], 'image/png', f)
 
     return
 
