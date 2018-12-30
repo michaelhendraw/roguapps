@@ -33,7 +33,7 @@ from linebot.models import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'ROGUAPPS'
+app.secret_key = 'ROGUAPP'
 
 # get LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN from the environment variable
 
@@ -77,7 +77,7 @@ def handle_text_message(event):
 
     # create session for first user
     if line_user_id not in session:
-        session[line_user_id] = []
+        session[line_user_id] = {}
 
     print("HERE session before:", session)
     
