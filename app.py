@@ -163,7 +163,7 @@ def handle_text_message(event):
                         line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
 
                         # get rich menu user
-                        rich_menu_id = ine_bot_api.get_rich_menu_id_of_user(line_user_id)
+                        rich_menu_id = line_bot_api.get_rich_menu_id_of_user(line_user_id)
                         print('HERE, user - rich menu:', line_user_id, rich_menu_id)
 
                 else:  # VALIDASI LOGIN GAGAL
