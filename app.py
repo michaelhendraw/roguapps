@@ -50,7 +50,7 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 parser = WebhookParser(LINE_CHANNEL_SECRET)
 
-@app.route("/callback", methods=['POST'])
+@app.route('/callback', methods=['POST'])
 def callback():
     # get X-Line-Signature header value
     signature = request.headers['X-Line-Signature']
@@ -70,21 +70,27 @@ def callback():
 def handle_text_message(event):
     conn = model.Conn()
 
-    print("HERE request event:", event)
+    print('HERE request event:', event)
 
     line_user_id = event.source.user_id
     text = event.message.text
 
     # create session for first user
     if line_user_id not in session:
-        session[line_user_id] = []
+        session[line_user_id] = {
+                                    'user_id':'',
+                                    'code':'',
+                                    'name':'',
+                                    'class_id':'',
+                                    'status':''
+                                }
 
-    print("HERE session before:", session)
+    print('HERE session before:', session)
     
-    if 'user_id' not in session[line_user_id]:
-        if 'status' not in session[line_user_id]:
-            session[line_user_id]['status'].append("login")
-            print("HERE session after:", session)
+    if not session[line_user_id]['user_id']: # belum login
+        if not session[line_user_id]['status']: # baru join
+            session[line_user_id]['status'] = 'login'
+            print('HERE session after:', session)
 
             line_bot_api.reply_message(
                 event.reply_token,
@@ -97,12 +103,12 @@ def handle_text_message(event):
                     )
                 ]
             )
-        else:
+        elif 'login' in session[line_user_id]['status']: # proses login
             text = text.replace(' ', '')
-            texts = text.split("-")
+            texts = text.split('-')
 
             if len(texts) != 2:
-                print("HERE session after:", session)
+                print('HERE session after:', session)
 
                 line_bot_api.reply_message(
                     event.reply_token,
@@ -118,12 +124,12 @@ def handle_text_message(event):
             else:
                 code = texts[0]
                 dob = texts[1]
-                if util.validate_date(dob,"%d%m%Y"):
-                    query_select = "SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1"
-                    conn.query(query_select, (code, util.convert_date(dob,"%d%m%Y","%Y-%m-%d")))
+                if util.validate_date(dob,'%d%m%Y'):
+                    query_select = 'SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1'
+                    conn.query(query_select, (code, util.convert_date(dob,'%d%m%Y','%Y-%m-%d')))
                     row = conn.cursor.fetchone()
                     if row == None:
-                        print("HERE session after:",session)
+                        print('HERE session after:',session)
 
                         line_bot_api.reply_message(
                             event.reply_token,
@@ -137,12 +143,14 @@ def handle_text_message(event):
                             ]
                         )
                     else:
-                        session[line_user_id]['user_id'].append(row["id"])
-                        session[line_user_id]['code'].append(row["code"])
-                        session[line_user_id]['name'].append(row["name"])
-                        session[line_user_id]['class_id'].append(row["class_id"])
-                        session[line_user_id]['status'].append("home")
-                        print("HERE session after:",session)
+                        session[line_user_id] = {
+                                    'user_id':row['id'],
+                                    'code':row['code'],
+                                    'name':row['name'],
+                                    'class_id':row['class_id'],
+                                    'status':'home'
+                                }
+                        print('HERE session after:',session)
                         
                         line_bot_api.reply_message(
                             event.reply_token,
@@ -153,7 +161,7 @@ def handle_text_message(event):
                             ]
                         )
                 else:
-                    print("HERE session after:",session)
+                    print('HERE session after:',session)
 
                     line_bot_api.reply_message(
                         event.reply_token,
@@ -166,35 +174,34 @@ def handle_text_message(event):
                             )
                         ]
                     )
-    else:
+    else: # sudah login
         if 'home' in session[line_user_id]['status']:
-            print("HERE, home")
-
-            print("LAST HERE, append from db")
+            print('HERE, home')
+            print('LAST HERE, append from db')
 
             carousel = CarouselContainer(
                 contents=[
                     BubbleContainer(
                         direction='ltr',
                         hero=ImageComponent(
-                            url="https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg",
-                            size="full",
-                            aspect_ratio="20:13",
-                            aspect_mode="cover",
+                            url='https://cdn.brilio.net/news/2016/01/11/36479/finlandia-siap-hapus-pelajaran-matematika-fisika-kapan-indonesia-160111y.jpg',
+                            size='full',
+                            aspect_ratio='20:13',
+                            aspect_mode='cover',
                             action=PostbackTemplateAction(
                                 uri='http://example.com',
                                 label='label'
                             )
                         ),
                         body=BoxComponent(
-                            layout="vertical",
+                            layout='vertical',
                             contents=[
                                 TextComponent(
-                                    type="text",
-                                    text="Matematika",
-                                    size="xl",
-                                    align="center",
-                                    weight="bold"
+                                    type='text',
+                                    text='Matematika',
+                                    size='xl',
+                                    align='center',
+                                    weight='bold'
                                 )
                             ]
                         )
@@ -202,54 +209,54 @@ def handle_text_message(event):
                     BubbleContainer(
                         direction='ltr',
                         hero=ImageComponent(
-                            url="https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg",
-                            size="full",
-                            aspect_ratio="20:13",
-                            aspect_mode="cover",
+                            url='https://cdn.sindonews.net/dyn/620/content/2017/10/06/144/1246048/menuju-bahasa-internasional-bahasa-indonesia-diajarkan-di-45-negara-IoZ.jpg',
+                            size='full',
+                            aspect_ratio='20:13',
+                            aspect_mode='cover',
                             action=URIAction(
                                 uri='http://example.com',
                                 label='label'
                             )
                         ),
                         body=BoxComponent(
-                            layout="vertical",
+                            layout='vertical',
                             contents=[
                                 TextComponent(
-                                    type="text",
-                                    text="Bahasa Indonesia",
-                                    size="xl",
-                                    align="center",
-                                    weight="bold"
+                                    type='text',
+                                    text='Bahasa Indonesia',
+                                    size='xl',
+                                    align='center',
+                                    weight='bold'
                                 )
                             ]
                         )
                     )
                 ]
             )
-            flex_message = FlexSendMessage(alt_text="Carousel Mapel", contents=carousel)
+            flex_message = FlexSendMessage(alt_text='Carousel Mapel', contents=carousel)
             line_bot_api.reply_message(event.reply_token, flex_message)        
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
 
-@app.route("/test_db", methods=['GET'])
+@app.route('/test_db', methods=['GET'])
 def test_db():
     conn = model.Conn()
     
-    query_select = "SELECT * FROM student"    
+    query_select = 'SELECT * FROM student'    
     conn.query(query_select, '')
     rows = conn.cursor.fetchall()
 
     for row in rows:
-        print("HERE Email = ", row["email"])
-        print("HERE Name = ", row["name"], "\n")
+        print('HERE Email = ', row['email'])
+        print('HERE Name = ', row['name'], '\n')
 
     return 'OK'
 
-@app.route("/test_template", methods=['GET'])
+@app.route('/test_template', methods=['GET'])
 def test_template():
-    carousel = ""
-    flex_message = FlexSendMessage(alt_text="Flex Message", contents=carousel)
-    print("HERE, flex_message:", flex_message)
+    carousel = ''
+    flex_message = FlexSendMessage(alt_text='Flex Message', contents=carousel)
+    print('HERE, flex_message:', flex_message)
     
     return 'OK'
 
@@ -258,20 +265,20 @@ def test_session():
     line_user_id = 123
     
     if line_user_id not in session:
-        print("if 263")
+        print('if 263')
         session[line_user_id] = {}
     
-    print("session 1:", session)        
+    print('session 1:', session)        
     
     if 'user_id' not in session[line_user_id]:
-        print("if")
+        print('if')
     else:
-        print("else")
+        print('else')
         
-    print("session 2:", session)
+    print('session 2:', session)
     
     return 'OK'
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
