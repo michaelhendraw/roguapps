@@ -34,7 +34,7 @@ from linebot.models import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'ROGUAPP1'
+app.secret_key = 'ROGUAPP2'
 
 rich_menu = {}
 
