@@ -39,8 +39,6 @@ app.secret_key = 'ROGUAPP12'
 
 redis=redis.from_url(constant.REDISCLOUD_URL)
 
-rich_menu = {}
-
 # get LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN from the environment variable
 
 LINE_CHANNEL_SECRET = constant.LINE_CHANNEL_SECRET
@@ -74,8 +72,6 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
-    global rich_menu
-
     conn = model.Conn()
 
     line_user_id = event.source.user_id
@@ -88,9 +84,9 @@ def handle_text_message(event):
 
     print('\n\nHERE, request event:', event)
     print("\n\nHERE, session:", session)
-    print("\n\nHERE, rich menu:", rich_menu)
 
-    if session == {}: # USER PERTAMA KALI BUKA
+    if session == {}:
+        print("\n\nHERE # USER PERTAMA KALI BUKA")
         redis.set(line_user_id,json.dumps({'status':'login'}))
         
         line_bot_api.reply_message(
@@ -104,7 +100,8 @@ def handle_text_message(event):
             ]
         )
     else:
-        if 'login' in session['status']: # PROSES LOGIN
+        if 'login' in session['status']:
+            print("\n\nHERE # PROSES LOGIN")
             text = text.replace(' ', '')
             texts = text.split('-')
 
@@ -137,13 +134,15 @@ def handle_text_message(event):
                                 )
                             ]
                         )
-                    else: # LOGIN BERHASIL
-                        redis.set(line_user_id,json.dumps({'user_id':row['id'],'code':row['code'],'name':row['name'],'class_id':row['class_id'],'status':'home'}))
+                    else:
+                        print("\n\nHERE # LOGIN BERHASIL")
 
                         # create rich menu
-                        create_rich_menu(line_user_id)
+                        rich_menu = create_rich_menu(line_user_id)
                         
                         line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
+
+                        redis.set(line_user_id,json.dumps({'user_id':row['id'],'code':row['code'],'name':row['name'],'class_id':row['class_id'],'status':'home','rich_menu':rich_menu}))
                         
                         line_bot_api.reply_message(
                             event.reply_token,[
@@ -153,7 +152,8 @@ def handle_text_message(event):
                             ]
                         )
 
-                else:  # VALIDASI LOGIN GAGAL
+                else:
+                    print("\n\nHERE # VALIDASI LOGIN GAGAL")
                     line_bot_api.reply_message(
                         event.reply_token,[
                             TextMessage(
@@ -165,13 +165,11 @@ def handle_text_message(event):
                         ]
                     )
         elif 'home' in session['status']:
-            print("\n\nHERE, event", event)
-            print("\n\nHERE, event.message.text", event.message.text)
             if 'material' in event.message.text:
-                print("\n\nHERE, material")
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
+                print("\n\nHERE # MATERIAL")
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material','rich_menu':session['rich_menu']}))
 
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material'])
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
                 # get all subject by class_id
                 query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
@@ -225,13 +223,13 @@ def handle_text_message(event):
                     )
                     line_bot_api.reply_message(event.reply_token, flex_message) 
             elif 'final_quiz' in event.message.text:
-                print("\n\nHERE, final_quiz")
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz'}))
+                print("\n\nHERE, FINAL QUIZ")
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz','rich_menu':session['rich_menu']}))
                 
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['final_quiz'])
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
             else:
-                print("\n\nHERE, home")
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
+                print("\n\nHERE, HOME")
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
                 line_bot_api.reply_message(
                     event.reply_token,[
                         TextMessage(
@@ -240,14 +238,14 @@ def handle_text_message(event):
                     ]
                 )
         elif 'material' in session['status']:
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material','rich_menu':session['rich_menu']}))
         
             if 'material_topic' in event.message.text:
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_topic'])
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_topic'])
             elif 'material_quiz' in event.message.text:
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
             elif 'material_discussion' in event.message.text:
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
 
@@ -399,7 +397,7 @@ def test_redis():
 def create_rich_menu(line_user_id):
     # doc: https://github.com/line/line-bot-sdk-python/blob/master/README.rst
 
-    global rich_menu
+    rich_menu = {}
 
     # home
     rich_menu_to_create = RichMenu(
@@ -692,7 +690,7 @@ def create_rich_menu(line_user_id):
     with open(constant.RICH_MENU_FINAL_QUIZ, 'rb') as f:
         line_bot_api.set_rich_menu_image(rich_menu['final_quiz'], 'image/png', f)
 
-    return
+    return rich_menu
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
