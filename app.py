@@ -146,7 +146,7 @@ def handle_text_message(event):
                         line_bot_api.reply_message(
                             event.reply_token,[
                                 TextMessage(
-                                    text=constant.WELCOME_HOME % (session['name']),
+                                    text=constant.WELCOME_HOME % (row['name']),
                                 )
                             ]
                         )
