@@ -74,6 +74,8 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text_message(event):
+    global rich_menu
+
     conn = model.Conn()
 
     print('HERE, request event:', event)
