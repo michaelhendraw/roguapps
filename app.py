@@ -6,10 +6,11 @@ import sys
 
 import constant
 import model
+import redis
 import util
 
 from argparse import ArgumentParser
-from flask import session, Flask, request, abort, redirect, url_for, escape
+from flask import Flask, request, abort, redirect, url_for, escape
 from linebot import (
     LineBotApi, WebhookHandler, WebhookParser
 )
@@ -35,6 +36,8 @@ from linebot.models import (
 
 app = Flask(__name__)
 app.secret_key = 'ROGUAPP12'
+
+redis=redis.from_url(constant.REDISCLOUD_URL)
 
 rich_menu = {}
 
@@ -63,9 +66,7 @@ def callback():
 
     # handle webhook body
     try:
-        print('HERE, session before:', session)
         handler.handle(body, signature)
-        print('HERE, session after:', session)
     except InvalidSignatureError:
         abort(400)
 
@@ -80,20 +81,14 @@ def handle_text_message(event):
     line_user_id = event.source.user_id
     text = event.message.text
 
-    # create session for first user
-    if session[line_user_id]['user_id'] != '':
-        print('--------------- HERE, create new session ---------------')
-        session[line_user_id] = {
-            'user_id':'',
-            'code':'',
-            'name':'',
-            'class_id':'',
-            'status':''
-        }
-    
-    if not session[line_user_id]['user_id']: # BELUM LOGIN
-        if not session[line_user_id]['status']: # BARU JOIN
-            session[line_user_id]['status'] = 'login'
+    session_bytes = redis.get(line_user_id)
+    session = {}
+    if session_bytes is not None:
+        session = json.loads(session_bytes.decode("utf-8"))
+
+    if session == None: # BELUM LOGIN
+        if not session['status']: # BARU JOIN
+            redis.set(line_user_id,json.dumps({'status':'login'}))
             
             line_bot_api.reply_message(
                 event.reply_token,[
@@ -105,7 +100,7 @@ def handle_text_message(event):
                     )
                 ]
             )
-        elif 'login' in session[line_user_id]['status']: # PROSES LOGIN
+        elif 'login' in session['status']: # PROSES LOGIN
             text = text.replace(' ', '')
             texts = text.split('-')
 
@@ -139,11 +134,7 @@ def handle_text_message(event):
                             ]
                         )
                     else: # LOGIN BERHASIL
-                        session[line_user_id]['user_id'] = row['id']
-                        session[line_user_id]['code'] = row['code']
-                        session[line_user_id]['name'] = row['name']
-                        session[line_user_id]['class_id'] = row['class_id']
-                        session[line_user_id]['status'] = 'home'
+                        redis.set(line_user_id,json.dumps({'user_id':row['id'],'code':row['code'],'name':row['name'],'class_id':row['class_id'],'status':'home'}))
 
                         # create rich menu
                         create_rich_menu(line_user_id)
@@ -153,7 +144,7 @@ def handle_text_message(event):
                         line_bot_api.reply_message(
                             event.reply_token,[
                                 TextMessage(
-                                    text=constant.WELCOME_HOME % (session[line_user_id]['name']),
+                                    text=constant.WELCOME_HOME % (session['name']),
                                 )
                             ]
                         )
@@ -170,13 +161,13 @@ def handle_text_message(event):
                         ]
                     )
     else: # sudah login
-        if 'home' in session[line_user_id]['status']: # home
+        if 'home' in session['status']: # home
             line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
                         
             line_bot_api.reply_message(
                 event.reply_token,[
                     TextMessage(
-                        text=constant.WELCOME_HOME % (session[line_user_id]['name']),
+                        text=constant.WELCOME_HOME % (session['name']),
                     )
                 ]
             )
@@ -187,7 +178,7 @@ def handle_text_message(event):
 
                     # get all subject by class_id
                     query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
-                    conn.query(query_select, (session[line_user_id]['class_id'],))
+                    conn.query(query_select, (session['class_id'],))
                     rows = conn.cursor.fetchall()
                     if rows == None: # subject is empty
                         line_bot_api.reply_message(
@@ -347,6 +338,22 @@ def test_session():
     print('session 3:', session)
 
     return 'OK'
+
+@app.route('/test_getredis/<key>')
+def test_redis(key):
+    # keys = "1"
+    data = redis.get(key)
+    if data is None:
+        return '-'
+    else:
+        return json.loads(data.decode("utf-8"))
+
+@app.route('/test_setredis/<key>/<val>')
+def test_setredis(key,val):
+    # key = "1"
+    # val = {'id':2,'name':'hussain'}
+    redis.set(key,json.dumps(val))
+    return 'set:' + key
 
 # --------------------------------------------------------
 
