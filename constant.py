@@ -6,8 +6,8 @@ LINE_CHANNEL_SECRET = 'd3ef65feda90d05d3e3058311667f920'
 DATABASE_URL = 'postgres://ibixvzxplfguzm:6a5eab8ebaa96974bdadcb163b67587c4809b707ea24dae904ff002e503ec399@ec2-54-225-150-216.compute-1.amazonaws.com:5432/dakvfptk0c0c1s'
 
 # --- REDIS ---
-# REDISCLOUD_URL = 'host=localhost,port=6379,db=0'
-REDISCLOUD_URL = 'redis://rediscloud:eKR2mIBfDxoj5N49Z2x64dcq38R6noKu@redis-13289.c11.us-east-1-3.ec2.cloud.redislabs.com:13289'
+REDISCLOUD_URL = 'host=localhost,port=6379,db=0'
+# REDISCLOUD_URL = 'redis://rediscloud:eKR2mIBfDxoj5N49Z2x64dcq38R6noKu@redis-13289.c11.us-east-1-3.ec2.cloud.redislabs.com:13289'
 
 # --- IMAGE ---
 RICH_MENU_HOME = 'image/rich_menu/home.png'

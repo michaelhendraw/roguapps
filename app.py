@@ -86,21 +86,23 @@ def handle_text_message(event):
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
-    if session == None: # BELUM LOGIN
-        if not session['status']: # BARU JOIN
-            redis.set(line_user_id,json.dumps({'status':'login'}))
-            
-            line_bot_api.reply_message(
-                event.reply_token,[
-                    TextMessage(
-                        text=constant.WELCOME_APP
-                    ),
-                    TextMessage(
-                        text=constant.LOGIN
-                    )
-                ]
-            )
-        elif 'login' in session['status']: # PROSES LOGIN
+    print("HERE, session:", session)
+
+    if session == {}: # USER PERTAMA KALI BUKA
+        redis.set(line_user_id,json.dumps({'status':'login'}))
+        
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text=constant.WELCOME_APP
+                ),
+                TextMessage(
+                    text=constant.LOGIN
+                )
+            ]
+        )
+    else:
+        if 'login' in session['status']: # PROSES LOGIN
             text = text.replace(' ', '')
             texts = text.split('-')
 
@@ -160,8 +162,7 @@ def handle_text_message(event):
                             )
                         ]
                     )
-    else: # sudah login
-        if 'home' in session['status']: # home
+        elif 'home' in session['status']: # home
             line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
                         
             line_bot_api.reply_message(
@@ -340,7 +341,7 @@ def test_session():
     return 'OK'
 
 @app.route('/test_getredis/<key>')
-def test_redis(key):
+def test_getredis(key):
     # keys = "1"
     data = redis.get(key)
     if data is None:
@@ -355,6 +356,32 @@ def test_setredis(key,val):
     redis.set(key,json.dumps(val))
     return 'set:' + key
 
+@app.route('/test_redis')
+def test_redis():
+    line_user_id = '124'
+
+    session_bytes = redis.get(line_user_id)
+    session = {}
+    if session_bytes is not None:
+        session = json.loads(session_bytes.decode("utf-8"))
+
+    print("HERE, session_bytes:", session_bytes)
+    print("HERE, session:", session)
+
+    if session == {}:
+        print("# BELUM LOGIN")
+        redis.set(line_user_id,json.dumps({'status':'login'}))
+    else:
+        if 'login' in session['status']:
+            print("# PROSES LOGIN")
+            redis.set(line_user_id,json.dumps({'status':'home'}))
+        elif 'home' in session['status']:
+            print("# HOME :)")
+            redis.set(line_user_id,json.dumps({'status':'unknown'}))
+        else:
+            print("# UNKNOWN")
+              
+    return 'OK'
 # --------------------------------------------------------
 
 def create_rich_menu(line_user_id):
