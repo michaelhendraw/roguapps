@@ -34,7 +34,7 @@ from linebot.models import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'ROGUAPP6'
+app.secret_key = 'ROGUAPP12'
 
 rich_menu = {}
 
@@ -82,6 +82,7 @@ def handle_text_message(event):
 
     # create session for first user
     if line_user_id not in session:
+        print('HERE, create new session')
         session[line_user_id] = {
             'user_id':'',
             'code':'',
@@ -321,21 +322,30 @@ def test_template():
 
 @app.route('/test_session')
 def test_session():
+
     line_user_id = 123
+
+    print('HERE, line_user_id:', line_user_id)
+    print('session 1:', session)
+
+    # if line_user_id not in session:
+    if session.get(line_user_id) == None:
+        print('HERE, create new session 1')
+        session[line_user_id] = {
+            'user_id':'',
+            'code':'',
+            'name':'',
+            'class_id':'',
+            'status':''
+        }
     
-    if line_user_id not in session:
-        print('if 263')
-        session[line_user_id] = {}
-    
-    print('session 1:', session)        
-    
-    if 'user_id' not in session[line_user_id]:
-        print('if')
-    else:
-        print('else')
-        
     print('session 2:', session)
-    
+
+    if session.get(line_user_id) == None:
+        print('HERE, create new session 2')
+
+    print('session 3:', session)
+
     return 'OK'
 
 # --------------------------------------------------------
