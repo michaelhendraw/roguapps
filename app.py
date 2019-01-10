@@ -81,7 +81,7 @@ def handle_text_message(event):
     text = event.message.text
 
     # create session for first user
-    if session[line_user_id]['user_id'] != None:
+    if session[line_user_id]['user_id'] != '':
         print('--------------- HERE, create new session ---------------')
         session[line_user_id] = {
             'user_id':'',
