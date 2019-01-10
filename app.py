@@ -165,7 +165,9 @@ def handle_text_message(event):
                         ]
                     )
         elif 'home' in session['status']:
-            if event.message.text is 'material':
+            print("\n\nHERE, event", event)
+            print("\n\nHERE, event.message.text", event.message.text)
+            if 'material' in event.message.text:
                 print("\n\nHERE, material")
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
 
@@ -222,7 +224,7 @@ def handle_text_message(event):
                         )
                     )
                     line_bot_api.reply_message(event.reply_token, flex_message) 
-            elif event.message.text is 'final_quiz':
+            elif 'final_quiz' in event.message.text:
                 print("\n\nHERE, final_quiz")
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz'}))
                 
@@ -240,11 +242,11 @@ def handle_text_message(event):
         elif 'material' in session['status']:
             redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
         
-            if event.message.text is  'material_topic':
+            if 'material_topic' in event.message.text:
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_topic'])
-            elif event.message.text is 'material_quiz':
+            elif 'material_quiz' in event.message.text:
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
-            elif event.message.text is 'material_discussion':
+            elif 'material_discussion' in event.message.text:
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
