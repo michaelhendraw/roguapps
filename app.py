@@ -78,8 +78,6 @@ def handle_text_message(event):
 
     conn = model.Conn()
 
-    print('HERE, request event:', event)
-
     line_user_id = event.source.user_id
     text = event.message.text
 
@@ -88,7 +86,9 @@ def handle_text_message(event):
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
-    print("HERE, session:", session)
+    print('\n\nHERE, request event:', event)
+    print("\n\nHERE, session:", session)
+    print("\n\nHERE, rich menu:", rich_menu)
 
     if session == {}: # USER PERTAMA KALI BUKA
         redis.set(line_user_id,json.dumps({'status':'login'}))
@@ -166,6 +166,7 @@ def handle_text_message(event):
                     )
         elif 'home' in session['status']:
             if event.message.text is 'material':
+                print("\n\nHERE, material")
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
 
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material'])
@@ -222,10 +223,12 @@ def handle_text_message(event):
                     )
                     line_bot_api.reply_message(event.reply_token, flex_message) 
             elif event.message.text is 'final_quiz':
+                print("\n\nHERE, final_quiz")
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz'}))
                 
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['final_quiz'])
             else:
+                print("\n\nHERE, home")
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
                 line_bot_api.reply_message(
                     event.reply_token,[
