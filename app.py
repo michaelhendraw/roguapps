@@ -79,6 +79,17 @@ def handle_text_message(event):
 
     line_user_id = event.source.user_id
     text = event.message.text
+
+    # create session for first user
+    if session[line_user_id]['user_id'] != None:
+        print('--------------- HERE, create new session ---------------')
+        session[line_user_id] = {
+            'user_id':'',
+            'code':'',
+            'name':'',
+            'class_id':'',
+            'status':''
+        }
     
     if not session[line_user_id]['user_id']: # BELUM LOGIN
         if not session[line_user_id]['status']: # BARU JOIN
