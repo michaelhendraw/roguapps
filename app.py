@@ -164,82 +164,87 @@ def handle_text_message(event):
                             )
                         ]
                     )
-        elif 'home' in session['status']: # home
-            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
-                        
-            line_bot_api.reply_message(
-                event.reply_token,[
-                    TextMessage(
-                        text=constant.WELCOME_HOME % (session['name']),
-                    )
-                ]
-            )
-        else:
-            if 'case' in event.message:
-                if 'material' in event.message.case: # material
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material'])
+        elif 'home' in session['status']:
+            if event.message.text is 'material':
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
 
-                    # get all subject by class_id
-                    query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
-                    conn.query(query_select, (session['class_id'],))
-                    rows = conn.cursor.fetchall()
-                    if rows == None: # subject is empty
-                        line_bot_api.reply_message(
-                            event.reply_token,[
-                                TextMessage(
-                                    text=constant.SUBJECT_EMPTY
-                                )
-                            ]
-                        )
-                    else: # subject exist
-                        contents = []
-                        for row in rows:
-                            contents.append(BubbleContainer(
-                                direction='ltr',
-                                hero=ImageComponent(
-                                    url=row['image'],
-                                    size='full',
-                                    aspect_ratio='20:13',
-                                    aspect_mode='cover'
-                                ),
-                                body=BoxComponent(
-                                    layout='vertical',
-                                    contents=[
-                                        ButtonComponent(
-                                            action=PostbackTemplateAction(
-                                                label='Materi',
-                                                text='material',
-                                                data='case=material&subject_id='+str(row['id'])
-                                            )
-                                        ),
-                                        ButtonComponent(
-                                            action=PostbackTemplateAction(
-                                                label='Latihan UN',
-                                                text='final_quiz',
-                                                data='case=final_quiz&subject_id='+str(row['id'])
-                                            )
-                                        ),
-                                    ]
-                                )
-                            ))
-                        
-                        flex_message = FlexSendMessage(
-                            alt_text='Carousel Mapel',
-                            contents=CarouselContainer(
-                                contents=contents
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material'])
+
+                # get all subject by class_id
+                query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
+                conn.query(query_select, (session['class_id'],))
+                rows = conn.cursor.fetchall()
+                if rows == None: # subject is empty
+                    line_bot_api.reply_message(
+                        event.reply_token,[
+                            TextMessage(
+                                text=constant.SUBJECT_EMPTY
                             )
+                        ]
+                    )
+                else: # subject exist
+                    contents = []
+                    for row in rows:
+                        contents.append(BubbleContainer(
+                            direction='ltr',
+                            hero=ImageComponent(
+                                url=row['image'],
+                                size='full',
+                                aspect_ratio='20:13',
+                                aspect_mode='cover'
+                            ),
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[
+                                    ButtonComponent(
+                                        action=PostbackTemplateAction(
+                                            label='Materi',
+                                            text='material',
+                                            data='case=material&subject_id='+str(row['id'])
+                                        )
+                                    ),
+                                    ButtonComponent(
+                                        action=PostbackTemplateAction(
+                                            label='Latihan UN',
+                                            text='final_quiz',
+                                            data='case=final_quiz&subject_id='+str(row['id'])
+                                        )
+                                    ),
+                                ]
+                            )
+                        ))
+                    
+                    flex_message = FlexSendMessage(
+                        alt_text='Carousel Mapel',
+                        contents=CarouselContainer(
+                            contents=contents
                         )
-                        line_bot_api.reply_message(event.reply_token, flex_message)            
-                elif 'material_topic' in event.message.case: # material_topic
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_topic'])
-                elif 'material_quiz' in event.message.case: # material_quiz
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
-                elif 'material_discussion' in event.message.case: # material_discussion
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
-                elif 'final_quiz' in event.message.case: # final_quiz
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['final_quiz'])
+                    )
+                    line_bot_api.reply_message(event.reply_token, flex_message) 
+            elif event.message.text is 'final_quiz':
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz'}))
+                
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['final_quiz'])
             else:
-                line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
+                line_bot_api.reply_message(
+                    event.reply_token,[
+                        TextMessage(
+                            text=constant.WELCOME_HOME % (session['name']),
+                        )
+                    ]
+                )
+        elif 'material' in session['status']:
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material'}))
+        
+            if event.message.text is  'material_topic':
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_topic'])
+            elif event.message.text is 'material_quiz':
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+            elif event.message.text is 'material_discussion':
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
 
 # --------------------------------------------------------
 

@@ -8,6 +8,7 @@ DATABASE_URL = 'postgres://ibixvzxplfguzm:6a5eab8ebaa96974bdadcb163b67587c4809b7
 # --- REDIS ---
 # REDISCLOUD_URL = 'host=localhost,port=6379,db=0'
 REDISCLOUD_URL = 'redis://rediscloud:eKR2mIBfDxoj5N49Z2x64dcq38R6noKu@redis-13289.c11.us-east-1-3.ec2.cloud.redislabs.com:13289'
+# redis-cli -h redis-13289.c11.us-east-1-3.ec2.cloud.redislabs.com -p 13289 -a eKR2mIBfDxoj5N49Z2x64dcq38R6noKu
 
 # --- IMAGE ---
 RICH_MENU_HOME = 'image/rich_menu/home.png'
