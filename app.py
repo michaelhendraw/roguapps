@@ -311,16 +311,16 @@ def handle_postback(event):
                                 ),
                                 ButtonComponent(
                                     action=PostbackAction(
-                                        label='Diskusi',
-                                        text='Diskusi',
-                                        data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                        label='Latihan Soal',
+                                        text='Latihan Soal',
+                                        data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
                                     )
                                 ),
                                 ButtonComponent(
                                     action=PostbackAction(
-                                        label='Latihan Soal',
-                                        text='Latihan Soal',
-                                        data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                        label='Diskusi',
+                                        text='Diskusi',
+                                        data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
                                     )
                                 )
                             ]
@@ -346,17 +346,12 @@ def handle_postback(event):
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
             
             seq = 1
-            if hasattr(postback,'sequence'):
+            if 'sequence' in postback:
                 seq = int(postback['sequence'])
             
             seq_before = seq-1
             seq_next = seq+1
             
-            # get material by topic_id
-            query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-            conn.query(query_select_material, (str(postback['topic_id']), seq))
-            row_material = conn.cursor.fetchone()
-
             # get next material by topic_id
             query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
             conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
@@ -370,6 +365,11 @@ def handle_postback(event):
             else:
                 label_prev_next = 'Lanjut'
                 button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+
+            # get material by topic_id
+            query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+            conn.query(query_select_material, (str(postback['topic_id']), seq))
+            row_material = conn.cursor.fetchone()
 
             flex_message = FlexSendMessage(
                 alt_text='Carousel Materi',
@@ -415,6 +415,8 @@ def handle_postback(event):
         elif 'material_quiz' in postback['action']:
             print("\n\nHERE # MATERIAL QUIZ")
 
+            
+
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
             
         elif 'material_discussion' in postback['action']:
@@ -428,20 +430,19 @@ def handle_postback(event):
 def test_db():
     conn = model.Conn()
 
-    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '5'}
+    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '5' , 'sequence': 2}
 
     seq = 1
-    if hasattr(postback,'sequence'):
+    if 'sequence' in postback:
         seq = int(postback['sequence'])
     
     seq_before = seq-1
     seq_next = seq+1
-    
-    # get material by topic_id
-    query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-    conn.query(query_select_material, (str(postback['topic_id']), seq))
-    row_material = conn.cursor.fetchone()
 
+    print("\n\n\nHERE, seq:", seq)
+    print("\n\n\nHERE, seq_before:", seq_before)
+    print("\n\n\nHERE, seq_next:", seq_next)
+    
     # get next material by topic_id
     query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
     conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
@@ -455,6 +456,11 @@ def test_db():
     else:
         label_prev_next = 'Lanjut'
         button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+
+    # get material by topic_id
+    query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+    conn.query(query_select_material, (str(postback['topic_id']), seq))
+    row_material = conn.cursor.fetchone()
 
     flex_message = FlexSendMessage(
         alt_text='Carousel Materi',
@@ -479,8 +485,7 @@ def test_db():
                     TextComponent(
                         text=str(row_material['description']),
                         align='start',
-                        gravity='center',
-                        wrap=true,
+                        gravity='center'
                     ),
                     ButtonComponent(
                         action=PostbackAction(
