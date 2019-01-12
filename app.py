@@ -394,8 +394,7 @@ def handle_postback(event):
                             TextComponent(
                                 text=str(row_material['description']),
                                 align='start',
-                                gravity='center',
-                                wrap=true,
+                                gravity='center'
                             ),
                             ButtonComponent(
                                 action=PostbackAction(
