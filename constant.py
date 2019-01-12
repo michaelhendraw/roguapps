@@ -13,7 +13,7 @@ REDISCLOUD_URL = 'redis://rediscloud:eKR2mIBfDxoj5N49Z2x64dcq38R6noKu@redis-1328
 # --- IMAGE ---
 RICH_MENU_HOME = 'image/rich_menu/home.png'
 RICH_MENU_MATERIAL = 'image/rich_menu/material.png'
-RICH_MENU_MATERIAL_TOPIC = 'image/rich_menu/material_topic.png'
+RICH_MENU_MATERIAL_LEARN = 'image/rich_menu/material_learn.png'
 RICH_MENU_MATERIAL_QUIZ = 'image/rich_menu/material_quiz.png'
 RICH_MENU_MATERIAL_DISCUSSION = 'image/rich_menu/material_discussion.png'
 RICH_MENU_FINAL_QUIZ = 'image/rich_menu/final_quiz.png'
@@ -28,3 +28,4 @@ LOGIN_FAIL = 'Maaf, data tidak ditemukan.'
 # HOME
 WELCOME_HOME = 'Hai %s, silahkan pilih menu navigasi untuk melanjutkan belajar.'
 SUBJECT_EMPTY = 'Maaf, kelas kamu belum memiliki mapel.'
+TOPIC_EMPTY = 'Maaf, mapel ini belum memiliki topik.'

@@ -22,7 +22,7 @@ from linebot.models import (
     SourceUser, SourceGroup, SourceRoom,
     TemplateSendMessage, ConfirmTemplate, MessageAction, MessageTemplateAction,
     ButtonsTemplate, ImageCarouselTemplate, ImageCarouselColumn, URIAction, URITemplateAction,
-    PostbackTemplateAction, DatetimePickerAction,
+    PostbackAction, DatetimePickerAction,
     CameraAction, CameraRollAction, LocationAction,
     CarouselTemplate, CarouselColumn, PostbackEvent,
     StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
@@ -82,8 +82,15 @@ def handle_text_message(event):
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
+    postbacks = event.postback.data.split('&')
+    postback = []
+    for p in postbacks:
+        ps = p.split('=')
+        postback[ps[0]] = ps[1]
+
     print('\n\nHERE, request event:', event)
     print("\n\nHERE, session:", session)
+    print("\n\nHERE, postback:", postback)
 
     if session == {}:
         print("\n\nHERE # USER PERTAMA KALI BUKA")
@@ -139,9 +146,8 @@ def handle_text_message(event):
 
                         # create rich menu
                         rich_menu = create_rich_menu(line_user_id)
-                        
-                        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
 
+                        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
                         redis.set(line_user_id,json.dumps({'user_id':row['id'],'code':row['code'],'name':row['name'],'class_id':row['class_id'],'status':'home','rich_menu':rich_menu}))
                         
                         line_bot_api.reply_message(
@@ -165,10 +171,10 @@ def handle_text_message(event):
                         ]
                     )
         elif 'home' in session['status']:
-            if 'material' in event.message.text:
+            if 'material' in postback['action']:
                 print("\n\nHERE # MATERIAL")
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material','rich_menu':session['rich_menu']}))
 
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_subject','rich_menu':session['rich_menu']}))
                 line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
                 # get all subject by class_id
@@ -186,34 +192,30 @@ def handle_text_message(event):
                 else: # subject exist
                     contents = []
                     for row in rows:
-                        contents.append(BubbleContainer(
-                            direction='ltr',
-                            hero=ImageComponent(
-                                url=row['image'],
-                                size='full',
-                                aspect_ratio='20:13',
-                                aspect_mode='cover'
-                            ),
-                            body=BoxComponent(
-                                layout='vertical',
-                                contents=[
-                                    ButtonComponent(
-                                        action=PostbackTemplateAction(
-                                            label='Materi',
-                                            text='material',
-                                            data='case=material&subject_id='+str(row['id'])
-                                        )
-                                    ),
-                                    ButtonComponent(
-                                        action=PostbackTemplateAction(
-                                            label='Latihan UN',
-                                            text='final_quiz',
-                                            data='case=final_quiz&subject_id='+str(row['id'])
-                                        )
-                                    ),
-                                ]
+                        contents.append(
+                            BubbleContainer(
+                                direction='ltr',
+                                hero=ImageComponent(
+                                    url=row['image'],
+                                    size='full',
+                                    aspect_ratio='20:13',
+                                    aspect_mode='cover'
+                                ),
+                                body=BoxComponent(
+                                    layout='vertical',
+                                    contents=[
+                                        ButtonComponent(
+                                            action=PostbackAction(
+                                                label='Materi',
+                                                text='Materi',
+                                                data='action=material_subject&subject_id='+str(row['id'])
+                                            )
+                                        ),
+                                    
+                                    ]
+                                )
                             )
-                        ))
+                        )
                     
                     flex_message = FlexSendMessage(
                         alt_text='Carousel Mapel',
@@ -221,8 +223,8 @@ def handle_text_message(event):
                             contents=contents
                         )
                     )
-                    line_bot_api.reply_message(event.reply_token, flex_message) 
-            elif 'final_quiz' in event.message.text:
+                    line_bot_api.reply_message(event.reply_token, flex_message)
+            elif 'final_quiz' in postback['action']:
                 print("\n\nHERE, FINAL QUIZ")
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz','rich_menu':session['rich_menu']}))
                 
@@ -230,6 +232,7 @@ def handle_text_message(event):
             else:
                 print("\n\nHERE, HOME")
                 line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
+
                 line_bot_api.reply_message(
                     event.reply_token,[
                         TextMessage(
@@ -237,17 +240,143 @@ def handle_text_message(event):
                         )
                     ]
                 )
-        elif 'material' in session['status']:
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material','rich_menu':session['rich_menu']}))
-        
-            if 'material_topic' in event.message.text:
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_topic'])
-            elif 'material_quiz' in event.message.text:
+        elif 'material_subject' in session['status']:
+            print("\n\nHERE # MATERIAL SUBJECT")
+            
+            # create rich menu material
+            rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
+
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':session['rich_menu']+rich_menu_add}))
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu_add['material'])
+
+            # get all subject by class_id
+            query_select_subject = 'SELECT * FROM subject WHERE id = %s'
+            conn.query(query_select_subject, (postback['subject_id'],))
+            row_subject = conn.cursor.fetchone()
+
+            # get all topic by subject_id
+            query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
+            conn.query(query_select_topic, (postback['subject_id'],))
+            rows_topic = conn.cursor.fetchall()
+            if rows_topic == None: # topic is empty
+                line_bot_api.reply_message(
+                    event.reply_token,[
+                        TextMessage(
+                            text=constant.TOPIC_EMPTY
+                        )
+                    ]
+                )
+            else: # topic exist
+                contents = []
+                for row in rows_topic:
+                    contents.append(
+                        TextComponent(
+                            text=str(row['name']),
+                            margin='md',
+                            size='xl',
+                            align='center',
+                            gravity='center',
+                            weight='bold'
+                        ),
+                        ButtonComponent(
+                            action=PostbackAction(
+                                label='Belajar',
+                                text='Belajar',
+                                data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
+                            )
+                        ),
+                        ButtonComponent(
+                            action=PostbackAction(
+                                label='Diskusi',
+                                text='Diskusi',
+                                data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                            )
+                        ),
+                        ButtonComponent(
+                            action=PostbackAction(
+                                label='Latihan Soal',
+                                text='Latihan Soal',
+                                data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
+                            )
+                        )
+                    )
+                
+                flex_message = FlexSendMessage(
+                    alt_text='Carousel Topik',
+                    contents=CarouselContainer(
+                        contents=BubbleContainer(
+                            direction='ltr',
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[contents]
+                            )
+                        )
+                    )
+                )
+
+                line_bot_api.reply_message(event.reply_token, flex_message)
+        elif 'material_topic' in session['status']:
+            print("\n\nHERE # MATERIAL TOPIC")
+
+            if 'material_learn' in postback['action']:
+                print("\n\nHERE # MATERIAL LEARN")
+
+                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
+
+                # get material by topic_id
+                query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+                conn.query(query_select_material, (postback['topic_id'],str(postback['sequence']+1),))
+                row_material = conn.cursor.fetchone()
+
+                # get next material by topic_id
+                query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+                conn.query(query_select_material_next, (postback['topic_id'],str(postback['sequence']+2),))
+                row_material_next = conn.cursor.fetchone()
+
+                if row_material_next == None:
+                    line_bot_api.reply_message(
+                                event.reply_token,[
+                                    TextMessage(
+                                        text='#' % row_material['name'] % '#' % row['description'],
+                                    ),
+                                    ButtonComponent(
+                                        action=PostbackAction(
+                                            label='Kembali',
+                                            text='Kembali',
+                                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']-1))
+                                        )
+                                    )
+                                ]
+                            )
+                else:
+                    line_bot_api.reply_message(
+                                event.reply_token,[
+                                    TextMessage(
+                                        text='#' % row_material['name'] % '#' % row['description'],
+                                    ),
+                                    ButtonComponent(
+                                        action=PostbackAction(
+                                            label=str(row['name']),
+                                            text=str(row['name']),
+                                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']+2))
+                                        )
+                                    )
+                                ]
+                            )
+            elif 'material_quiz' in postback['action']:
+                print("\n\nHERE # MATERIAL QUIZ")
+
                 line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
-            elif 'material_discussion' in event.message.text:
+
+
+            elif 'material_discussion' in postback['action']:
+                print("\n\nHERE # MATERIAL DISCUSSION")
+
                 line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
+
+
         else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=postback['action']))
 
 # --------------------------------------------------------
 
@@ -295,17 +424,17 @@ def test_template():
                     layout='vertical',
                     contents=[
                         ButtonComponent(
-                            action=PostbackTemplateAction(
+                            action=PostbackAction(
                                 label='Materi',
-                                text='material',
-                                data='case=material&subject_id='+str(row['id'])
+                                text='Materi',
+                                data='action=material&subject_id='+str(row['id'])
                             )
                         ),
                         ButtonComponent(
-                            action=PostbackTemplateAction(
+                            action=PostbackAction(
                                 label='Latihan UN',
-                                text='final_quiz',
-                                data='case=final_quiz&subject_id='+str(row['id'])
+                                text='Latihan UN',
+                                data='action=final_quiz&subject_id='+str(row['id'])
                             )
                         ),
                     ]
@@ -392,11 +521,11 @@ def test_redis():
             print("# UNKNOWN")
               
     return 'OK'
+
 # --------------------------------------------------------
 
+# doc: https://github.com/line/line-bot-sdk-python/blob/master/README.rst
 def create_rich_menu(line_user_id):
-    # doc: https://github.com/line/line-bot-sdk-python/blob/master/README.rst
-
     rich_menu = {}
 
     # home
@@ -416,10 +545,10 @@ def create_rich_menu(line_user_id):
                     width=1190,
                     height=780
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Materi',
-                    text='material',
-                    data='case=material'
+                    text='Materi',
+                    data='action=material'
                 )
             ),
             RichMenuArea(
@@ -429,10 +558,10 @@ def create_rich_menu(line_user_id):
                     width=1174,
                     height=760
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Latihan UN',
-                    text='final_quiz',
-                    data='case=final_quiz'
+                    text='Latihan UN',
+                    data='action=final_quiz'
                 )
             ),
         ]
@@ -458,10 +587,10 @@ def create_rich_menu(line_user_id):
                     width=587,
                     height=784
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Kembali',
-                    text='home',
-                    data='case=home'
+                    text='Kembali',
+                    data='action=home'
                 )
             ),
             RichMenuArea(
@@ -471,10 +600,10 @@ def create_rich_menu(line_user_id):
                     width=1817,
                     height=788
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Latihan UN',
-                    text='final_quiz',
-                    data='case=final_quiz'
+                    text='Latihan UN',
+                    data='action=final_quiz'
                 )
             ),
         ]
@@ -483,7 +612,54 @@ def create_rich_menu(line_user_id):
     with open(constant.RICH_MENU_MATERIAL, 'rb') as f:
         line_bot_api.set_rich_menu_image(rich_menu['material'], 'image/png', f)
 
-    # material_topic
+    # final_quiz
+    rich_menu_to_create = RichMenu(
+        size=RichMenuSize(
+            width=2500,
+            height=843
+        ),
+        selected=False,
+        name='Latihan UN',
+        chat_bar_text='Latihan UN',
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=28,
+                    y=32,
+                    width=587,
+                    height=784
+                ),
+                action=PostbackAction(
+                    label='Kembali',
+                    text='Kembali',
+                    data='action=home'
+                )
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(
+                    x=651,
+                    y=32,
+                    width=1817,
+                    height=788
+                ),
+                action=PostbackAction(
+                    label='Materi',
+                    text='Materi',
+                    data='action=material'
+                )
+            ),
+        ]
+    )
+    rich_menu['final_quiz'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_FINAL_QUIZ, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['final_quiz'], 'image/png', f)
+
+    return rich_menu
+
+def create_rich_menu_material(line_user_id, subject_id):
+    rich_menu = {}
+
+    # material_learn
     rich_menu_to_create = RichMenu(
         size=RichMenuSize(
             width=2500,
@@ -500,10 +676,10 @@ def create_rich_menu(line_user_id):
                     width=579,
                     height=776
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Kembali',
-                    text='material',
-                    data='case=material'
+                    text='Kembali',
+                    data='action=material&subject_id='+subject_id
                 )
             ),
             RichMenuArea(
@@ -513,10 +689,10 @@ def create_rich_menu(line_user_id):
                     width=880,
                     height=780
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Latihan Soal',
-                    text='material_quiz',
-                    data='case=material_quiz'
+                    text='Latihan Soal',
+                    data='action=material_quiz&subject_id='+subject_id
                 )
             ),
             RichMenuArea(
@@ -526,17 +702,17 @@ def create_rich_menu(line_user_id):
                     width=880,
                     height=784
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Diskusi',
-                    text='material_discussion',
-                    data='case=material_discussion'
+                    text='Diskusi',
+                    data='action=material_discussion&subject_id='+subject_id
                 )
             ),
         ]
     )
-    rich_menu['material_topic'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
-    with open(constant.RICH_MENU_MATERIAL_TOPIC, 'rb') as f:
-        line_bot_api.set_rich_menu_image(rich_menu['material_topic'], 'image/png', f)
+    rich_menu['material_learn'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
+    with open(constant.RICH_MENU_MATERIAL_LEARN, 'rb') as f:
+        line_bot_api.set_rich_menu_image(rich_menu['material_learn'], 'image/png', f)
 
     # material_quiz
     rich_menu_to_create = RichMenu(
@@ -555,10 +731,10 @@ def create_rich_menu(line_user_id):
                     width=579,
                     height=776
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Kembali',
-                    text='material',
-                    data='case=material'
+                    text='Kembali',
+                    data='action=material&subject_id='+subject_id
                 )
             ),
             RichMenuArea(
@@ -568,10 +744,10 @@ def create_rich_menu(line_user_id):
                     width=880,
                     height=780
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Belajar',
-                    text='material_topic',
-                    data='case=material_topic'
+                    text='Belajar',
+                    data='action=material_learn&subject_id='+subject_id
                 )
             ),
             RichMenuArea(
@@ -581,10 +757,10 @@ def create_rich_menu(line_user_id):
                     width=880,
                     height=784
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Diskusi',
-                    text='material_discussion',
-                    data='case=material_discussion'
+                    text='Diskusi',
+                    data='action=material_discussion&subject_id='+subject_id
                 )
             ),
         ]
@@ -610,10 +786,10 @@ def create_rich_menu(line_user_id):
                     width=579,
                     height=776
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Kembali',
-                    text='material',
-                    data='case=material'
+                    text='Kembali',
+                    data='action=material&subject_id='+subject_id
                 )
             ),
             RichMenuArea(
@@ -623,10 +799,10 @@ def create_rich_menu(line_user_id):
                     width=880,
                     height=780
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Belajar',
-                    text='material_topic',
-                    data='case=material_topic'
+                    text='Belajar',
+                    data='action=material_learn&subject_id='+subject_id
                 )
             ),
             RichMenuArea(
@@ -636,10 +812,10 @@ def create_rich_menu(line_user_id):
                     width=880,
                     height=784
                 ),
-                action=PostbackTemplateAction(
+                action=PostbackAction(
                     label='Latihan Soal',
-                    text='material_quiz',
-                    data='case=material_quiz'
+                    text='Latihan Soal',
+                    data='action=material_quiz&subject_id='+subject_id
                 )
             ),
         ]
@@ -647,48 +823,6 @@ def create_rich_menu(line_user_id):
     rich_menu['material_discussion'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
     with open(constant.RICH_MENU_MATERIAL_DISCUSSION, 'rb') as f:
         line_bot_api.set_rich_menu_image(rich_menu['material_discussion'], 'image/png', f)
-
-    # final_quiz
-    rich_menu_to_create = RichMenu(
-        size=RichMenuSize(
-            width=2500,
-            height=843
-        ),
-        selected=False,
-        name='Latihan UN',
-        chat_bar_text='Latihan UN',
-        areas=[
-            RichMenuArea(
-                bounds=RichMenuBounds(
-                    x=28,
-                    y=32,
-                    width=587,
-                    height=784
-                ),
-                action=PostbackTemplateAction(
-                    label='Kembali',
-                    text='home',
-                    data='case=home'
-                )
-            ),
-            RichMenuArea(
-                bounds=RichMenuBounds(
-                    x=651,
-                    y=32,
-                    width=1817,
-                    height=788
-                ),
-                action=PostbackTemplateAction(
-                    label='Materi',
-                    text='material',
-                    data='case=material'
-                )
-            ),
-        ]
-    )
-    rich_menu['final_quiz'] = line_bot_api.create_rich_menu(rich_menu=rich_menu_to_create)
-    with open(constant.RICH_MENU_FINAL_QUIZ, 'rb') as f:
-        line_bot_api.set_rich_menu_image(rich_menu['final_quiz'], 'image/png', f)
 
     return rich_menu
 
