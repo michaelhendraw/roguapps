@@ -188,12 +188,11 @@ def handle_postback(event):
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
-    postback = []
-    if hasattr(event, 'postback'):
-        postbacks = event.postback.data.split('&')
-        for p in postbacks:
-            ps = p.split('=')
-            postback[ps[0]] = ps[1]
+    postback = {}
+    postbacks = event.postback.data.split('&')
+    for p in postbacks:
+        ps = p.split('=')
+        postback[ps[0]] = ps[1]
 
     print('\n\nHERE, request event:', event)
     print("\n\nHERE, session:", session)
