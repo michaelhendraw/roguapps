@@ -259,8 +259,13 @@ def handle_postback(event):
         print("\n\nHERE # MATERIAL SUBJECT")
         
         # create rich menu material
+        rich_menu_old = session['rich_menu']
         rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
-        rich_menu_new = session['rich_menu'].update(rich_menu_add)
+        rich_menu_new = rich_menu_old.update(rich_menu_add)
+
+        print("\n\n\nHERE, rich_menu_old:", rich_menu_old)
+        print("\n\n\nHERE, rich_menu_add:", rich_menu_add)
+        print("\n\n\nHERE, rich_menu_new:", rich_menu_new)
 
         redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu_new}))
         line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
@@ -298,7 +303,7 @@ def handle_postback(event):
                         action=PostbackAction(
                             label='Belajar',
                             text='Belajar',
-                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
+                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
                         )
                     ),
                     ButtonComponent(
@@ -312,7 +317,7 @@ def handle_postback(event):
                         action=PostbackAction(
                             label='Latihan Soal',
                             text='Latihan Soal',
-                            data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
+                            data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
                         )
                     )
                 )
@@ -359,7 +364,7 @@ def handle_postback(event):
                                     action=PostbackAction(
                                         label='Kembali',
                                         text='Kembali',
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']-1))
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(postback['sequence']-1)
                                     )
                                 )
                             ]
@@ -374,7 +379,7 @@ def handle_postback(event):
                                     action=PostbackAction(
                                         label=str(row['name']),
                                         text=str(row['name']),
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']+2))
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(postback['sequence']+2)
                                     )
                                 )
                             ]
