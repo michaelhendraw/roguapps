@@ -304,7 +304,7 @@ def handle_postback(event):
                                     action=PostbackAction(
                                         label='Belajar',
                                         text='Belajar',
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
                                     )
                                 ),
                                 ButtonComponent(
@@ -318,7 +318,7 @@ def handle_postback(event):
                                     action=PostbackAction(
                                         label='Latihan Soal',
                                         text='Latihan Soal',
-                                        data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                        data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
                                     )
                                 )
                             ]
@@ -342,8 +342,11 @@ def handle_postback(event):
             print("\n\nHERE # MATERIAL LEARN")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
-
-            seq = int(postback['sequence'])+1
+            
+            seq = 1
+            if postback['sequence'] is not None:
+                seq = int(postback['sequence'])
+            
             seq_before = seq-1
             seq_next = seq+1
             
@@ -366,27 +369,52 @@ def handle_postback(event):
                 label_prev_next = 'Lanjut'
                 button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
 
-            line_bot_api.reply_message(
-                            event.reply_token,[
-                                TextSendMessage(
-                                    text='Materi: '+row_material['name']+'\n\n'+row_material['description'],
-                                ),
-                                TextSendMessage(
-                                    text=label_prev_next,
-                                    quick_reply=QuickReply(
-                                        items=[
-                                            QuickReplyButton(
-                                                action=PostbackAction(
-                                                    label=label_prev_next,
-                                                    text=label_prev_next,
-                                                    data=button_prev_next
-                                                )
-                                            )
-                                        ]
+            flex_message = FlexSendMessage(
+                alt_text='Carousel Materi',
+                contents=CarouselContainer(
+                    contents=[
+                        BubbleContainer(
+                            direction='ltr',
+                            header=BoxComponent(
+                                layout='vertical',
+                                contents=[
+                                     TextComponent(
+                                        text=str(row_material['name']),
+                                        margin='md',
+                                        size='xl',
+                                        align='center',
+                                        gravity='center',
+                                        weight='bold'
+                                    ),
+                                ]
+                            ),
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[
+                                    TextComponent(
+                                        text=str(row_material['description']),
+                                        align='start',
+                                        gravity='center',
+                                        wrap='true',
+                                    ),
+                                    ButtonComponent(
+                                        action=PostbackAction(
+                                            label=label_prev_next,
+                                            text=label_prev_next,
+                                            data=button_prev_next
+                                        ),
+                                        margin='xxl',
+                                        style='primary'
                                     )
-                                )
-                            ]
+                                ]
+                            )
                         )
+                    ]
+                )
+            )
+
+            line_bot_api.reply_message(event.reply_token, flex_message)
+
         elif 'material_quiz' in postback['action']:
             print("\n\nHERE # MATERIAL QUIZ")
 
@@ -483,7 +511,7 @@ def test_template():
                                 action=PostbackAction(
                                     label='Belajar',
                                     text='Belajar',
-                                    data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                    data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
                                 )
                             ),
                             ButtonComponent(
@@ -497,7 +525,7 @@ def test_template():
                                 action=PostbackAction(
                                     label='Latihan Soal',
                                     text='Latihan Soal',
-                                    data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                    data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
                                 )
                             )
                         ]
