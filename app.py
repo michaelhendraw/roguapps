@@ -367,7 +367,7 @@ def handle_postback(event):
                                     action=PostbackAction(
                                         label='Kembali',
                                         text='Kembali',
-                                        data='action=material_learn&subject_id='+row_subject['id']+'&topic_id='+row['id']+'&sequence='+seq_before
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(seq_before)
                                     )
                                 )
                             ]
@@ -382,7 +382,7 @@ def handle_postback(event):
                                     action=PostbackAction(
                                         label='Lanjut',
                                         text='Lanjut',
-                                        data='action=material_learn&subject_id='+row_subject['id']+'&topic_id='+row['id']+'&sequence='+seq_next
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(seq_next)
                                     )
                                 )
                             ]
