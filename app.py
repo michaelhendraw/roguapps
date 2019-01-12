@@ -263,7 +263,7 @@ def handle_postback(event):
         rich_menu_new = session['rich_menu'].update(rich_menu_add)
 
         redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu_new}))
-        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu_add['material'])
+        line_bot_api.link_rich_menu_to_user(line_user_id, session['material'])
 
         # get all subject by class_id
         query_select_subject = 'SELECT * FROM subject WHERE id = %s'
@@ -387,11 +387,6 @@ def handle_postback(event):
             print("\n\nHERE # MATERIAL DISCUSSION")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
-    else:
-        print("\n\nHERE, KEMBALI")
-
-        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':postback['action'],'rich_menu':session['rich_menu']}))
-        line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu'][postback['action']])
 
 # --------------------------------------------------------
 
