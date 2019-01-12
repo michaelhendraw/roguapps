@@ -357,32 +357,25 @@ def handle_postback(event):
             conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
             row_material_next = conn.cursor.fetchone()
 
+            label_prev_next = ''
+            button_prev_next = ''
             if row_material_next == None:
-                line_bot_api.reply_message(
-                            event.reply_token,[
-                                TextMessage(
-                                    text='#'+row_material['name']+'#'+row_material['description'],
-                                ),
-                                ButtonComponent(
-                                    action=PostbackAction(
-                                        label='Kembali',
-                                        text='Kembali',
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(seq_before)
-                                    )
-                                )
-                            ]
-                        )
+                label_prev_next = 'Kembali'
+                button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_before)
             else:
-                line_bot_api.reply_message(
+                label_prev_next = 'Lanjut'
+                button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+
+            line_bot_api.reply_message(
                             event.reply_token,[
                                 TextMessage(
-                                    text='#'+row_material['name']+'#'+row_material['description'],
+                                    text='Materi: '+row_material['name']+'\n\n'+row_material['description'],
                                 ),
                                 ButtonComponent(
                                     action=PostbackAction(
-                                        label='Lanjut',
-                                        text='Lanjut',
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(seq_next)
+                                        label=label_prev_next,
+                                        text=label_prev_next,
+                                        data=button_prev_next
                                     )
                                 )
                             ]
@@ -391,6 +384,7 @@ def handle_postback(event):
             print("\n\nHERE # MATERIAL QUIZ")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
+            
         elif 'material_discussion' in postback['action']:
             print("\n\nHERE # MATERIAL DISCUSSION")
 
@@ -407,7 +401,8 @@ def test_db():
     }
 
     seq = int(postback['sequence'])+1
-    next_seq = seq+1
+    seq_before = seq-1
+    seq_next = seq+1
     
     # get material by topic_id
     query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
@@ -416,20 +411,20 @@ def test_db():
 
     # get next material by topic_id
     query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-    conn.query(query_select_material_next, (str(postback['topic_id']), next_seq))
+    conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
     row_material_next = conn.cursor.fetchone()
 
     if row_material_next == None:
-        text='#'+row_material['name']+'#'+row_material['description']
-        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(seq-1)
-        print("if, text:", text)
-        print("if, data:", data)
+        text='#'+row_material['name']+'#\n\n'+row_material['description']
+        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_before)
+        print("text:",text)
+        print("data:",data)
     else:
-        text='#' % row_material['name'] % '#' % row['description'],
-        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(next_seq)
-        print("if, text:", text)
-        print("if, data:", data)
-
+        text='#'+row_material['name']+'#\n\n'+row_material['description']
+        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+        print("text:",text)
+        print("data:",data)
+    
     return 'OK'
 
 @app.route('/test_template', methods=['GET'])
