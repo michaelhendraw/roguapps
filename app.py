@@ -373,45 +373,41 @@ def handle_postback(event):
 
             flex_message = FlexSendMessage(
                 alt_text='Carousel Materi',
-                contents=CarouselContainer(
-                    contents=[
-                        BubbleContainer(
-                            direction='ltr',
-                            header=BoxComponent(
-                                layout='vertical',
-                                contents=[
-                                     TextComponent(
-                                        text=str(row_material['name']),
-                                        margin='md',
-                                        size='xl',
-                                        align='center',
-                                        gravity='center',
-                                        weight='bold'
-                                    ),
-                                ]
+                contents=BubbleContainer(
+                    direction='ltr',
+                    header=BoxComponent(
+                        layout='vertical',
+                        contents=[
+                                TextComponent(
+                                text=str(row_material['name']),
+                                margin='md',
+                                size='xl',
+                                align='center',
+                                gravity='center',
+                                weight='bold'
                             ),
-                            body=BoxComponent(
-                                layout='vertical',
-                                contents=[
-                                    TextComponent(
-                                        text=str(row_material['description']),
-                                        align='start',
-                                        gravity='center',
-                                        wrap='true',
-                                    ),
-                                    ButtonComponent(
-                                        action=PostbackAction(
-                                            label=label_prev_next,
-                                            text=label_prev_next,
-                                            data=button_prev_next
-                                        ),
-                                        margin='xxl',
-                                        style='primary'
-                                    )
-                                ]
+                        ]
+                    ),
+                    body=BoxComponent(
+                        layout='vertical',
+                        contents=[
+                            TextComponent(
+                                text=str(row_material['description']),
+                                align='start',
+                                gravity='center',
+                                wrap=true,
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label=label_prev_next,
+                                    text=label_prev_next,
+                                    data=button_prev_next
+                                ),
+                                margin='xxl',
+                                style='primary'
                             )
-                        )
-                    ]
+                        ]
+                    )
                 )
             )
 
@@ -433,11 +429,12 @@ def handle_postback(event):
 def test_db():
     conn = model.Conn()
 
-    postback = {
-        'subject_id': '2', 'topic_id': '3', 'sequence': '0'
-    }
+    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '5'}
 
-    seq = int(postback['sequence'])+1
+    seq = 1
+    if hasattr(postback,'sequence'):
+        seq = int(postback['sequence'])
+    
     seq_before = seq-1
     seq_next = seq+1
     
@@ -460,14 +457,47 @@ def test_db():
         label_prev_next = 'Lanjut'
         button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
 
-    a = ButtonComponent(
-            action=PostbackAction(
-                label=label_prev_next,
-                text=label_prev_next,
-                data=button_prev_next
+    flex_message = FlexSendMessage(
+        alt_text='Carousel Materi',
+        contents=BubbleContainer(
+            direction='ltr',
+            header=BoxComponent(
+                layout='vertical',
+                contents=[
+                        TextComponent(
+                        text=str(row_material['name']),
+                        margin='md',
+                        size='xl',
+                        align='center',
+                        gravity='center',
+                        weight='bold'
+                    ),
+                ]
+            ),
+            body=BoxComponent(
+                layout='vertical',
+                contents=[
+                    TextComponent(
+                        text=str(row_material['description']),
+                        align='start',
+                        gravity='center',
+                        wrap=true,
+                    ),
+                    ButtonComponent(
+                        action=PostbackAction(
+                            label=label_prev_next,
+                            text=label_prev_next,
+                            data=button_prev_next
+                        ),
+                        margin='xxl',
+                        style='primary'
+                    )
+                ]
             )
         )
-    print("a:", a)
+    )
+
+    print("flex_message:", flex_message)
 
     return 'OK'
 
