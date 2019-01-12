@@ -174,8 +174,6 @@ def handle_text_message(event):
                     )
                 ]
             )
-        else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text='Permintaan gagal'))
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
@@ -262,8 +260,9 @@ def handle_postback(event):
         
         # create rich menu material
         rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
+        rich_menu_new = session['rich_menu'].update(rich_menu_add)
 
-        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':session['rich_menu']+rich_menu_add}))
+        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu_new}))
         line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu_add['material'])
 
         # get all subject by class_id
@@ -388,6 +387,11 @@ def handle_postback(event):
             print("\n\nHERE # MATERIAL DISCUSSION")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
+    else:
+        print("\n\nHERE, KEMBALI")
+
+        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':postback['action'],'rich_menu':session['rich_menu']}))
+        line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu'][postback['action']])
 
 # --------------------------------------------------------
 
