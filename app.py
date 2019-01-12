@@ -259,15 +259,16 @@ def handle_postback(event):
         print("\n\nHERE # MATERIAL SUBJECT")
         
         # create rich menu material
-        rich_menu_old = session['rich_menu']
+        rich_menu = session['rich_menu']
+        print("\n\n\nHERE, rich_menu_old:", rich_menu)
+        
         rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
-        rich_menu_new = rich_menu_old.update(rich_menu_add)
+        rich_menu.update(rich_menu_add)
 
-        print("\n\n\nHERE, rich_menu_old:", rich_menu_old)
         print("\n\n\nHERE, rich_menu_add:", rich_menu_add)
-        print("\n\n\nHERE, rich_menu_new:", rich_menu_new)
+        print("\n\n\nHERE, rich_menu_new:", rich_menu)
 
-        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu_new}))
+        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu}))
         line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
         # get all subject by class_id
@@ -291,47 +292,50 @@ def handle_postback(event):
             contents = []
             for row in rows_topic:
                 contents.append(
-                    TextComponent(
-                        text=str(row['name']),
-                        margin='md',
-                        size='xl',
-                        align='center',
-                        gravity='center',
-                        weight='bold'
-                    ),
-                    ButtonComponent(
-                        action=PostbackAction(
-                            label='Belajar',
-                            text='Belajar',
-                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
-                        )
-                    ),
-                    ButtonComponent(
-                        action=PostbackAction(
-                            label='Diskusi',
-                            text='Diskusi',
-                            data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
-                        )
-                    ),
-                    ButtonComponent(
-                        action=PostbackAction(
-                            label='Latihan Soal',
-                            text='Latihan Soal',
-                            data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                    BubbleContainer(
+                        direction='ltr',
+                        body=BoxComponent(
+                            layout='vertical',
+                            contents=[
+                                TextComponent(
+                                    text=str(row['name']),
+                                    margin='md',
+                                    size='xl',
+                                    align='center',
+                                    gravity='center',
+                                    weight='bold'
+                                ),
+                                ButtonComponent(
+                                    action=PostbackAction(
+                                        label='Belajar',
+                                        text='Belajar',
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                    )
+                                ),
+                                ButtonComponent(
+                                    action=PostbackAction(
+                                        label='Diskusi',
+                                        text='Diskusi',
+                                        data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                    )
+                                ),
+                                ButtonComponent(
+                                    action=PostbackAction(
+                                        label='Latihan Soal',
+                                        text='Latihan Soal',
+                                        data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                    )
+                                )
+                            ]
                         )
                     )
                 )
+                
             
             flex_message = FlexSendMessage(
                 alt_text='Carousel Topik',
                 contents=CarouselContainer(
-                    contents=BubbleContainer(
-                        direction='ltr',
-                        body=BoxComponent(
-                            layout='vertical',
-                            contents=[contents]
-                        )
-                    )
+                    contents=[contents]
                 )
             )
 
