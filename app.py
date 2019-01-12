@@ -82,16 +82,8 @@ def handle_text_message(event):
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
-    postback = []
-    if hasattr(event, 'postback'):
-        postbacks = event.postback.data.split('&')
-        for p in postbacks:
-            ps = p.split('=')
-            postback[ps[0]] = ps[1]
-
     print('\n\nHERE, request event:', event)
     print("\n\nHERE, session:", session)
-    print("\n\nHERE, postback:", postback)
 
     if session == {}:
         print("\n\nHERE # USER PERTAMA KALI BUKA")
@@ -172,212 +164,231 @@ def handle_text_message(event):
                         ]
                     )
         elif 'home' in session['status']:
-            if 'material' in postback['action']:
-                print("\n\nHERE # MATERIAL")
+            print("\n\nHERE, HOME")
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
 
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_subject','rich_menu':session['rich_menu']}))
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
-
-                # get all subject by class_id
-                query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
-                conn.query(query_select, (session['class_id'],))
-                rows = conn.cursor.fetchall()
-                if rows == None: # subject is empty
-                    line_bot_api.reply_message(
-                        event.reply_token,[
-                            TextMessage(
-                                text=constant.SUBJECT_EMPTY
-                            )
-                        ]
+            line_bot_api.reply_message(
+                event.reply_token,[
+                    TextMessage(
+                        text=constant.WELCOME_HOME % (session['name']),
                     )
-                else: # subject exist
-                    contents = []
-                    for row in rows:
-                        contents.append(
-                            BubbleContainer(
-                                direction='ltr',
-                                hero=ImageComponent(
-                                    url=row['image'],
-                                    size='full',
-                                    aspect_ratio='20:13',
-                                    aspect_mode='cover'
-                                ),
-                                body=BoxComponent(
-                                    layout='vertical',
-                                    contents=[
-                                        ButtonComponent(
-                                            action=PostbackAction(
-                                                label='Materi',
-                                                text='Materi',
-                                                data='action=material_subject&subject_id='+str(row['id'])
-                                            )
-                                        ),
-                                    
-                                    ]
-                                )
-                            )
-                        )
-                    
-                    flex_message = FlexSendMessage(
-                        alt_text='Carousel Mapel',
-                        contents=CarouselContainer(
-                            contents=contents
-                        )
-                    )
-                    line_bot_api.reply_message(event.reply_token, flex_message)
-            elif 'final_quiz' in postback['action']:
-                print("\n\nHERE, FINAL QUIZ")
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz','rich_menu':session['rich_menu']}))
-                
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
-            else:
-                print("\n\nHERE, HOME")
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
+                ]
+            )
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text='Permintaan gagal'))
 
-                line_bot_api.reply_message(
-                    event.reply_token,[
-                        TextMessage(
-                            text=constant.WELCOME_HOME % (session['name']),
-                        )
-                    ]
-                )
-        elif 'material_subject' in session['status']:
-            print("\n\nHERE # MATERIAL SUBJECT")
-            
-            # create rich menu material
-            rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    conn = model.Conn()
 
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':session['rich_menu']+rich_menu_add}))
-            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu_add['material'])
+    line_user_id = event.source.user_id
+
+    session_bytes = redis.get(line_user_id)
+    session = {}
+    if session_bytes is not None:
+        session = json.loads(session_bytes.decode("utf-8"))
+
+    postback = []
+    if hasattr(event, 'postback'):
+        postbacks = event.postback.data.split('&')
+        for p in postbacks:
+            ps = p.split('=')
+            postback[ps[0]] = ps[1]
+
+    print('\n\nHERE, request event:', event)
+    print("\n\nHERE, session:", session)
+    print("\n\nHERE, postback:", postback)
+
+    if 'home' in session['status']:
+        if 'material' in postback['action']:
+            print("\n\nHERE # MATERIAL")
+
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_subject','rich_menu':session['rich_menu']}))
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
             # get all subject by class_id
-            query_select_subject = 'SELECT * FROM subject WHERE id = %s'
-            conn.query(query_select_subject, (postback['subject_id'],))
-            row_subject = conn.cursor.fetchone()
-
-            # get all topic by subject_id
-            query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
-            conn.query(query_select_topic, (postback['subject_id'],))
-            rows_topic = conn.cursor.fetchall()
-            if rows_topic == None: # topic is empty
+            query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
+            conn.query(query_select, (session['class_id'],))
+            rows = conn.cursor.fetchall()
+            if rows == None: # subject is empty
                 line_bot_api.reply_message(
                     event.reply_token,[
                         TextMessage(
-                            text=constant.TOPIC_EMPTY
+                            text=constant.SUBJECT_EMPTY
                         )
                     ]
                 )
-            else: # topic exist
+            else: # subject exist
                 contents = []
-                for row in rows_topic:
+                for row in rows:
                     contents.append(
-                        TextComponent(
-                            text=str(row['name']),
-                            margin='md',
-                            size='xl',
-                            align='center',
-                            gravity='center',
-                            weight='bold'
-                        ),
-                        ButtonComponent(
-                            action=PostbackAction(
-                                label='Belajar',
-                                text='Belajar',
-                                data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
-                            )
-                        ),
-                        ButtonComponent(
-                            action=PostbackAction(
-                                label='Diskusi',
-                                text='Diskusi',
-                                data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
-                            )
-                        ),
-                        ButtonComponent(
-                            action=PostbackAction(
-                                label='Latihan Soal',
-                                text='Latihan Soal',
-                                data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
+                        BubbleContainer(
+                            direction='ltr',
+                            hero=ImageComponent(
+                                url=row['image'],
+                                size='full',
+                                aspect_ratio='20:13',
+                                aspect_mode='cover'
+                            ),
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[
+                                    ButtonComponent(
+                                        action=PostbackAction(
+                                            label='Materi',
+                                            text='Materi',
+                                            data='action=material_subject&subject_id='+str(row['id'])
+                                        )
+                                    ),
+                                
+                                ]
                             )
                         )
                     )
                 
                 flex_message = FlexSendMessage(
-                    alt_text='Carousel Topik',
+                    alt_text='Carousel Mapel',
                     contents=CarouselContainer(
-                        contents=BubbleContainer(
-                            direction='ltr',
-                            body=BoxComponent(
-                                layout='vertical',
-                                contents=[contents]
-                            )
+                        contents=contents
+                    )
+                )
+                line_bot_api.reply_message(event.reply_token, flex_message)
+        elif 'final_quiz' in postback['action']:
+            print("\n\nHERE, FINAL QUIZ")
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz','rich_menu':session['rich_menu']}))
+            
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
+    elif 'material_subject' in session['status']:
+        print("\n\nHERE # MATERIAL SUBJECT")
+        
+        # create rich menu material
+        rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
+
+        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':session['rich_menu']+rich_menu_add}))
+        line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu_add['material'])
+
+        # get all subject by class_id
+        query_select_subject = 'SELECT * FROM subject WHERE id = %s'
+        conn.query(query_select_subject, (postback['subject_id'],))
+        row_subject = conn.cursor.fetchone()
+
+        # get all topic by subject_id
+        query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
+        conn.query(query_select_topic, (postback['subject_id'],))
+        rows_topic = conn.cursor.fetchall()
+        if rows_topic == None: # topic is empty
+            line_bot_api.reply_message(
+                event.reply_token,[
+                    TextMessage(
+                        text=constant.TOPIC_EMPTY
+                    )
+                ]
+            )
+        else: # topic exist
+            contents = []
+            for row in rows_topic:
+                contents.append(
+                    TextComponent(
+                        text=str(row['name']),
+                        margin='md',
+                        size='xl',
+                        align='center',
+                        gravity='center',
+                        weight='bold'
+                    ),
+                    ButtonComponent(
+                        action=PostbackAction(
+                            label='Belajar',
+                            text='Belajar',
+                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
+                        )
+                    ),
+                    ButtonComponent(
+                        action=PostbackAction(
+                            label='Diskusi',
+                            text='Diskusi',
+                            data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                        )
+                    ),
+                    ButtonComponent(
+                        action=PostbackAction(
+                            label='Latihan Soal',
+                            text='Latihan Soal',
+                            data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence=0')
                         )
                     )
                 )
+            
+            flex_message = FlexSendMessage(
+                alt_text='Carousel Topik',
+                contents=CarouselContainer(
+                    contents=BubbleContainer(
+                        direction='ltr',
+                        body=BoxComponent(
+                            layout='vertical',
+                            contents=[contents]
+                        )
+                    )
+                )
+            )
 
-                line_bot_api.reply_message(event.reply_token, flex_message)
-        elif 'material_topic' in session['status']:
-            print("\n\nHERE # MATERIAL TOPIC")
+            line_bot_api.reply_message(event.reply_token, flex_message)
+    elif 'material_topic' in session['status']:
+        print("\n\nHERE # MATERIAL TOPIC")
 
-            if 'material_learn' in postback['action']:
-                print("\n\nHERE # MATERIAL LEARN")
+        if 'material_learn' in postback['action']:
+            print("\n\nHERE # MATERIAL LEARN")
 
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
 
-                # get material by topic_id
-                query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-                conn.query(query_select_material, (postback['topic_id'],str(postback['sequence']+1),))
-                row_material = conn.cursor.fetchone()
+            # get material by topic_id
+            query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+            conn.query(query_select_material, (postback['topic_id'],str(postback['sequence']+1),))
+            row_material = conn.cursor.fetchone()
 
-                # get next material by topic_id
-                query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-                conn.query(query_select_material_next, (postback['topic_id'],str(postback['sequence']+2),))
-                row_material_next = conn.cursor.fetchone()
+            # get next material by topic_id
+            query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+            conn.query(query_select_material_next, (postback['topic_id'],str(postback['sequence']+2),))
+            row_material_next = conn.cursor.fetchone()
 
-                if row_material_next == None:
-                    line_bot_api.reply_message(
-                                event.reply_token,[
-                                    TextMessage(
-                                        text='#' % row_material['name'] % '#' % row['description'],
-                                    ),
-                                    ButtonComponent(
-                                        action=PostbackAction(
-                                            label='Kembali',
-                                            text='Kembali',
-                                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']-1))
-                                        )
+            if row_material_next == None:
+                line_bot_api.reply_message(
+                            event.reply_token,[
+                                TextMessage(
+                                    text='#' % row_material['name'] % '#' % row['description'],
+                                ),
+                                ButtonComponent(
+                                    action=PostbackAction(
+                                        label='Kembali',
+                                        text='Kembali',
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']-1))
                                     )
-                                ]
-                            )
-                else:
-                    line_bot_api.reply_message(
-                                event.reply_token,[
-                                    TextMessage(
-                                        text='#' % row_material['name'] % '#' % row['description'],
-                                    ),
-                                    ButtonComponent(
-                                        action=PostbackAction(
-                                            label=str(row['name']),
-                                            text=str(row['name']),
-                                            data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']+2))
-                                        )
+                                )
+                            ]
+                        )
+            else:
+                line_bot_api.reply_message(
+                            event.reply_token,[
+                                TextMessage(
+                                    text='#' % row_material['name'] % '#' % row['description'],
+                                ),
+                                ButtonComponent(
+                                    action=PostbackAction(
+                                        label=str(row['name']),
+                                        text=str(row['name']),
+                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id']+'&sequence='+str(postback['sequence']+2))
                                     )
-                                ]
-                            )
-            elif 'material_quiz' in postback['action']:
-                print("\n\nHERE # MATERIAL QUIZ")
+                                )
+                            ]
+                        )
+        elif 'material_quiz' in postback['action']:
+            print("\n\nHERE # MATERIAL QUIZ")
 
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
+        elif 'material_discussion' in postback['action']:
+            print("\n\nHERE # MATERIAL DISCUSSION")
 
-
-            elif 'material_discussion' in postback['action']:
-                print("\n\nHERE # MATERIAL DISCUSSION")
-
-                line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
-
-
-        else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=postback['action']))
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
 
 # --------------------------------------------------------
 
