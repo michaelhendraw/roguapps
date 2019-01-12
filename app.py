@@ -354,7 +354,7 @@ def handle_postback(event):
 
             # get next material by topic_id
             query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-            conn.query(query_select_material_next, (str(postback['topic_id']), next_seq))
+            conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
             row_material_next = conn.cursor.fetchone()
 
             if row_material_next == None:
