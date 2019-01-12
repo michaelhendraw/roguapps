@@ -341,9 +341,16 @@ def handle_postback(event):
             )
             flex_messages.append(flex_message)
 
+            print("\n\n\nHERE, flex_messages:", flex_messages)
+
             if row_material_next is None:
                 flex_message_material_topic = show_material_topic(event, conn, postback)
+
+                print("\n\n\nHERE, flex_messages add:", flex_message_material_topic)
+
                 flex_messages.append(flex_message_material_topic)
+
+            print("\n\n\nHERE, flex_messages:", flex_messages)
 
             line_bot_api.reply_message(event.reply_token, flex_messages)
 
