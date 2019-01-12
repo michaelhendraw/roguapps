@@ -368,14 +368,21 @@ def handle_postback(event):
 
             line_bot_api.reply_message(
                             event.reply_token,[
-                                TextMessage(
+                                TextSendMessage(
                                     text='Materi: '+row_material['name']+'\n\n'+row_material['description'],
                                 ),
-                                ButtonComponent(
-                                    action=PostbackAction(
-                                        label=label_prev_next,
-                                        text=label_prev_next,
-                                        data=button_prev_next
+                                TextSendMessage(
+                                    text=label_prev_next,
+                                    quick_reply=QuickReply(
+                                        items=[
+                                            QuickReplyButton(
+                                                action=PostbackAction(
+                                                    label=label_prev_next,
+                                                    text=label_prev_next,
+                                                    data=button_prev_next
+                                                )
+                                            )
+                                        ]
                                     )
                                 )
                             ]
@@ -414,17 +421,24 @@ def test_db():
     conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
     row_material_next = conn.cursor.fetchone()
 
+    label_prev_next = ''
+    button_prev_next = ''
     if row_material_next == None:
-        text='#'+row_material['name']+'#\n\n'+row_material['description']
-        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_before)
-        print("text:",text)
-        print("data:",data)
+        label_prev_next = 'Kembali'
+        button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_before)
     else:
-        text='#'+row_material['name']+'#\n\n'+row_material['description']
-        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
-        print("text:",text)
-        print("data:",data)
-    
+        label_prev_next = 'Lanjut'
+        button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+
+    a = ButtonComponent(
+            action=PostbackAction(
+                label=label_prev_next,
+                text=label_prev_next,
+                data=button_prev_next
+            )
+        )
+    print("a:", a)
+
     return 'OK'
 
 @app.route('/test_template', methods=['GET'])
