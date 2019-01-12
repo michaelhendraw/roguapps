@@ -343,27 +343,31 @@ def handle_postback(event):
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
 
+            seq = int(postback['sequence'])+1
+            seq_before = seq-1
+            seq_next = seq+1
+            
             # get material by topic_id
             query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-            conn.query(query_select_material, (postback['topic_id'],str(postback['sequence']+1),))
+            conn.query(query_select_material, (str(postback['topic_id']), seq))
             row_material = conn.cursor.fetchone()
 
             # get next material by topic_id
             query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
-            conn.query(query_select_material_next, (postback['topic_id'],str(postback['sequence']+2),))
+            conn.query(query_select_material_next, (str(postback['topic_id']), next_seq))
             row_material_next = conn.cursor.fetchone()
 
             if row_material_next == None:
                 line_bot_api.reply_message(
                             event.reply_token,[
                                 TextMessage(
-                                    text='#' % row_material['name'] % '#' % row['description'],
+                                    text='#'+row_material['name']+'#'+row_material['description'],
                                 ),
                                 ButtonComponent(
                                     action=PostbackAction(
                                         label='Kembali',
                                         text='Kembali',
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(postback['sequence']-1)
+                                        data='action=material_learn&subject_id='+row_subject['id']+'&topic_id='+row['id']+'&sequence='+seq_before
                                     )
                                 )
                             ]
@@ -372,13 +376,13 @@ def handle_postback(event):
                 line_bot_api.reply_message(
                             event.reply_token,[
                                 TextMessage(
-                                    text='#' % row_material['name'] % '#' % row['description'],
+                                    text='#'+row_material['name']+'#'+row_material['description'],
                                 ),
                                 ButtonComponent(
                                     action=PostbackAction(
-                                        label=str(row['name']),
-                                        text=str(row['name']),
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(postback['sequence']+2)
+                                        label='Lanjut',
+                                        text='Lanjut',
+                                        data='action=material_learn&subject_id='+row_subject['id']+'&topic_id='+row['id']+'&sequence='+seq_next
                                     )
                                 )
                             ]
@@ -397,14 +401,34 @@ def handle_postback(event):
 @app.route('/test_db', methods=['GET'])
 def test_db():
     conn = model.Conn()
-    
-    query_select = 'SELECT * FROM student'    
-    conn.query(query_select, '')
-    rows = conn.cursor.fetchall()
 
-    for row in rows:
-        print('HERE, Email = ', row['email'])
-        print('HERE, Name = ', row['name'], '\n')
+    postback = {
+        'subject_id': '2', 'topic_id': '3', 'sequence': '0'
+    }
+
+    seq = int(postback['sequence'])+1
+    next_seq = seq+1
+    
+    # get material by topic_id
+    query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+    conn.query(query_select_material, (str(postback['topic_id']), seq))
+    row_material = conn.cursor.fetchone()
+
+    # get next material by topic_id
+    query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
+    conn.query(query_select_material_next, (str(postback['topic_id']), next_seq))
+    row_material_next = conn.cursor.fetchone()
+
+    if row_material_next == None:
+        text='#'+row_material['name']+'#'+row_material['description']
+        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(seq-1)
+        print("if, text:", text)
+        print("if, data:", data)
+    else:
+        text='#' % row_material['name'] % '#' % row['description'],
+        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence='+str(next_seq)
+        print("if, text:", text)
+        print("if, data:", data)
 
     return 'OK'
 
@@ -484,34 +508,6 @@ def test_template():
         print('HERE, flex_message:', flex_message)
     
         return 'OK'
-
-@app.route('/test_session')
-def test_session():
-
-    line_user_id = 123
-
-    print('HERE, line_user_id:', line_user_id)
-    print('session 1:', session)
-
-    # if line_user_id not in session:
-    if session.get(line_user_id) == None:
-        print('HERE, create new session 1')
-        session[line_user_id] = {
-            'user_id':'',
-            'code':'',
-            'name':'',
-            'class_id':'',
-            'status':''
-        }
-    
-    print('session 2:', session)
-
-    if session.get(line_user_id) == None:
-        print('HERE, create new session 2')
-
-    print('session 3:', session)
-
-    return 'OK'
 
 @app.route('/test_getredis/<key>')
 def test_getredis(key):
