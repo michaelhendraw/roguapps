@@ -268,75 +268,9 @@ def handle_postback(event):
         redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu}))
         line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
-        # get all subject by class_id
-        query_select_subject = 'SELECT * FROM subject WHERE id = %s'
-        conn.query(query_select_subject, (postback['subject_id'],))
-        row_subject = conn.cursor.fetchone()
+        flex_message = show_material_topic(event, conn, postback)
 
-        # get all topic by subject_id
-        query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
-        conn.query(query_select_topic, (postback['subject_id'],))
-        rows_topic = conn.cursor.fetchall()
-        if rows_topic == None: # topic is empty
-            line_bot_api.reply_message(
-                event.reply_token,[
-                    TextMessage(
-                        text=constant.TOPIC_EMPTY
-                    )
-                ]
-            )
-        else: # topic exist
-            contents = []
-            for row in rows_topic:
-                contents.append(
-                    BubbleContainer(
-                        direction='ltr',
-                        body=BoxComponent(
-                            layout='vertical',
-                            contents=[
-                                TextComponent(
-                                    text=str(row['name']),
-                                    margin='md',
-                                    size='xl',
-                                    align='center',
-                                    gravity='center',
-                                    weight='bold'
-                                ),
-                                ButtonComponent(
-                                    action=PostbackAction(
-                                        label='Belajar',
-                                        text='Belajar',
-                                        data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
-                                    )
-                                ),
-                                ButtonComponent(
-                                    action=PostbackAction(
-                                        label='Latihan Soal',
-                                        text='Latihan Soal',
-                                        data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
-                                    )
-                                ),
-                                ButtonComponent(
-                                    action=PostbackAction(
-                                        label='Diskusi',
-                                        text='Diskusi',
-                                        data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
-                                    )
-                                )
-                            ]
-                        )
-                    )
-                )
-                
-            
-            flex_message = FlexSendMessage(
-                alt_text='Carousel Topik',
-                contents=CarouselContainer(
-                    contents=contents
-                )
-            )
-
-            line_bot_api.reply_message(event.reply_token, flex_message)
+        line_bot_api.reply_message(event.reply_token, flex_message)
     elif 'material_topic' in session['status']:
         print("\n\nHERE # MATERIAL TOPIC")
 
@@ -357,14 +291,17 @@ def handle_postback(event):
             conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
             row_material_next = conn.cursor.fetchone()
 
-            label_prev_next = ''
-            button_prev_next = ''
-            if row_material_next == None:
-                label_prev_next = 'Kembali'
-                button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_before)
-            else:
-                label_prev_next = 'Lanjut'
-                button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+            next_button = ''
+            if row_material_next is not None:
+                next_button = ButtonComponent(
+                    action=PostbackAction(
+                        label='Lanjut',
+                        text='Lanjut',
+                        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+                    ),
+                    margin='xxl',
+                    style='primary'
+                )
 
             # get material by topic_id
             query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
@@ -396,21 +333,17 @@ def handle_postback(event):
                                 align='start',
                                 gravity='center'
                             ),
-                            ButtonComponent(
-                                action=PostbackAction(
-                                    label=label_prev_next,
-                                    text=label_prev_next,
-                                    data=button_prev_next
-                                ),
-                                margin='xxl',
-                                style='primary'
-                            )
+                            next_button
                         ]
                     )
                 )
             )
 
-            line_bot_api.reply_message(event.reply_token, flex_message)
+            if row_material_next is None:
+                flex_message_material_topic = show_material_topic(event, conn, postback)
+                flex_message.update(flex_message_material_topic)
+
+            line_bot_api.reply_message(event.reply_token, [flex_message])
 
         elif 'material_quiz' in postback['action']:
             print("\n\nHERE # MATERIAL QUIZ")
@@ -426,11 +359,11 @@ def handle_postback(event):
 
 # --------------------------------------------------------
 
-@app.route('/test_db', methods=['GET'])
-def test_db():
+@app.route('/test_db/<s>', methods=['GET'])
+def test_db(s):
     conn = model.Conn()
 
-    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '5' , 'sequence': 2}
+    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '5' , 'sequence': s}
 
     seq = 1
     if 'sequence' in postback:
@@ -438,24 +371,23 @@ def test_db():
     
     seq_before = seq-1
     seq_next = seq+1
-
-    print("\n\n\nHERE, seq:", seq)
-    print("\n\n\nHERE, seq_before:", seq_before)
-    print("\n\n\nHERE, seq_next:", seq_next)
     
     # get next material by topic_id
     query_select_material_next = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
     conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
     row_material_next = conn.cursor.fetchone()
 
-    label_prev_next = ''
-    button_prev_next = ''
-    if row_material_next == None:
-        label_prev_next = 'Kembali'
-        button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_before)
-    else:
-        label_prev_next = 'Lanjut'
-        button_prev_next = 'action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+    next_button = ''
+    if row_material_next is not None:
+        next_button = ButtonComponent(
+            action=PostbackAction(
+                label='Lanjut',
+                text='Lanjut',
+                data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+            ),
+            margin='xxl',
+            style='primary'
+        )
 
     # get material by topic_id
     query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
@@ -487,23 +419,19 @@ def test_db():
                         align='start',
                         gravity='center'
                     ),
-                    ButtonComponent(
-                        action=PostbackAction(
-                            label=label_prev_next,
-                            text=label_prev_next,
-                            data=button_prev_next
-                        ),
-                        margin='xxl',
-                        style='primary'
-                    )
+                    next_button
                 ]
             )
         )
     )
 
+    if row_material_next is None:
+        flex_message_material_topic = show_material_topic(event, conn, postback)
+        flex_message.update(flex_message_material_topic)
+
     print("flex_message:", flex_message)
 
-    return 'OK'
+    return str(flex_message)
 
 @app.route('/test_template', methods=['GET'])
 def test_template():
@@ -931,6 +859,78 @@ def create_rich_menu_material(line_user_id, subject_id):
 
 def remove_rich_menu(line_user_id):
     line_bot_api.unlink_rich_menu_from_user(line_user_id)
+
+# --------------------------------------------------------
+def show_material_topic(event, conn, postback):
+    # get all subject by class_id
+    query_select_subject = 'SELECT * FROM subject WHERE id = %s'
+    conn.query(query_select_subject, (postback['subject_id'],))
+    row_subject = conn.cursor.fetchone()
+
+    # get all topic by subject_id
+    query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
+    conn.query(query_select_topic, (postback['subject_id'],))
+    rows_topic = conn.cursor.fetchall()
+    if rows_topic == None: # topic is empty
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text=constant.TOPIC_EMPTY
+                )
+            ]
+        )
+    else: # topic exist
+        contents = []
+        for row in rows_topic:
+            contents.append(
+                BubbleContainer(
+                    direction='ltr',
+                    body=BoxComponent(
+                        layout='vertical',
+                        contents=[
+                            TextComponent(
+                                text=str(row['name']),
+                                margin='md',
+                                size='xl',
+                                align='center',
+                                gravity='center',
+                                weight='bold'
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label='Belajar',
+                                    text='Belajar',
+                                    data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                )
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label='Latihan Soal',
+                                    text='Latihan Soal',
+                                    data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                )
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label='Diskusi',
+                                    text='Diskusi',
+                                    data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                )
+                            )
+                        ]
+                    )
+                )
+            )
+            
+        
+        flex_message = FlexSendMessage(
+            alt_text='Carousel Topik',
+            contents=CarouselContainer(
+                contents=contents
+            )
+        )
+
+        return flex_message
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
