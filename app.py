@@ -346,7 +346,7 @@ def handle_postback(event):
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
             
             seq = 1
-            if not hasattr(postback,'sequence'):
+            if hasattr(postback,'sequence'):
                 seq = int(postback['sequence'])
             
             seq_before = seq-1
