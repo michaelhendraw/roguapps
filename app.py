@@ -88,6 +88,8 @@ def handle_text_message(event):
     if session == {}:
         print("\n\nHERE # USER PERTAMA KALI BUKA")
         redis.set(line_user_id,json.dumps({'status':'login'}))
+
+        remove_rich_menu(line_user_id)
         
         line_bot_api.reply_message(
             event.reply_token,[
@@ -892,6 +894,9 @@ def create_rich_menu_material(line_user_id, subject_id):
         line_bot_api.set_rich_menu_image(rich_menu['material_discussion'], 'image/png', f)
 
     return rich_menu
+
+def remove_rich_menu(line_user_id):
+    line_bot_api.unlink_rich_menu_from_user(line_user_id)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
