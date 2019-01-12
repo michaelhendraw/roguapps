@@ -83,7 +83,7 @@ def handle_text_message(event):
         session = json.loads(session_bytes.decode("utf-8"))
 
     postback = []
-    if event.postback is not None:
+    if hasattr(event, 'postback'):
         postbacks = event.postback.data.split('&')
         for p in postbacks:
             ps = p.split('=')
