@@ -291,63 +291,90 @@ def handle_postback(event):
             conn.query(query_select_material_next, (str(postback['topic_id']), seq_next))
             row_material_next = conn.cursor.fetchone()
 
-            next_button = ''
-            if row_material_next is not None:
-                next_button = ButtonComponent(
-                    action=PostbackAction(
-                        label='Lanjut',
-                        text='Lanjut',
-                        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
-                    ),
-                    margin='xxl',
-                    style='primary'
-                )
-
             # get material by topic_id
             query_select_material = 'SELECT * FROM material WHERE topic_id = %s AND sequence = %s'
             conn.query(query_select_material, (str(postback['topic_id']), seq))
             row_material = conn.cursor.fetchone()
 
             flex_messages = []
-            flex_message = FlexSendMessage(
-                alt_text='Carousel Materi',
-                contents=BubbleContainer(
-                    direction='ltr',
-                    header=BoxComponent(
-                        layout='vertical',
-                        contents=[
+            if row_material_next is None:
+                flex_message = FlexSendMessage(
+                    alt_text='Carousel Materi',
+                    contents=BubbleContainer(
+                        direction='ltr',
+                        header=BoxComponent(
+                            layout='vertical',
+                            contents=[
+                                    TextComponent(
+                                    text=str(row_material['name']),
+                                    margin='md',
+                                    size='xl',
+                                    align='center',
+                                    gravity='center',
+                                    weight='bold'
+                                ),
+                            ]
+                        ),
+                        body=BoxComponent(
+                            layout='vertical',
+                            contents=[
                                 TextComponent(
-                                text=str(row_material['name']),
-                                margin='md',
-                                size='xl',
-                                align='center',
-                                gravity='center',
-                                weight='bold'
-                            ),
-                        ]
-                    ),
-                    body=BoxComponent(
-                        layout='vertical',
-                        contents=[
-                            TextComponent(
-                                text=str(row_material['description']),
-                                align='start',
-                                gravity='center'
-                            ),
-                            next_button
-                        ]
+                                    text=str(row_material['description']),
+                                    align='start',
+                                    gravity='center'
+                                )
+                            ]
+                        )
                     )
                 )
-            )
-            flex_messages.append(flex_message)
+                flex_messages.append(flex_message)
+            else:
+                flex_message = FlexSendMessage(
+                    alt_text='Carousel Materi',
+                    contents=BubbleContainer(
+                        direction='ltr',
+                        header=BoxComponent(
+                            layout='vertical',
+                            contents=[
+                                    TextComponent(
+                                    text=str(row_material['name']),
+                                    margin='md',
+                                    size='xl',
+                                    align='center',
+                                    gravity='center',
+                                    weight='bold'
+                                ),
+                            ]
+                        ),
+                        body=BoxComponent(
+                            layout='vertical',
+                            contents=[
+                                TextComponent(
+                                    text=str(row_material['description']),
+                                    align='start',
+                                    gravity='center'
+                                ),
+                                # the different is here in button
+                                ButtonComponent(
+                                    action=PostbackAction(
+                                        label='Lanjut',
+                                        text='Lanjut',
+                                        data='action=material_learn&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)
+                                    ),
+                                    margin='xxl',
+                                    style='primary'
+                                )
+                            ]
+                        )
+                    )
+                )
+                flex_messages.append(flex_message)
 
             print("\n\n\nHERE, flex_messages:", flex_messages)
 
             if row_material_next is None:
                 flex_message_material_topic = show_material_topic(event, conn, postback)
-
                 print("\n\n\nHERE, flex_messages add:", flex_message_material_topic)
-
                 flex_messages.append(flex_message_material_topic)
 
             print("\n\n\nHERE, flex_messages:", flex_messages)
