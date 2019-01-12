@@ -308,6 +308,7 @@ def handle_postback(event):
             conn.query(query_select_material, (str(postback['topic_id']), seq))
             row_material = conn.cursor.fetchone()
 
+            flex_messages = []
             flex_message = FlexSendMessage(
                 alt_text='Carousel Materi',
                 contents=BubbleContainer(
@@ -338,12 +339,13 @@ def handle_postback(event):
                     )
                 )
             )
+            flex_messages.append(flex_message)
 
             if row_material_next is None:
                 flex_message_material_topic = show_material_topic(event, conn, postback)
-                flex_message.update(flex_message_material_topic)
+                flex_messages.append(flex_message_material_topic)
 
-            line_bot_api.reply_message(event.reply_token, [flex_message])
+            line_bot_api.reply_message(event.reply_token, flex_messages)
 
         elif 'material_quiz' in postback['action']:
             print("\n\nHERE # MATERIAL QUIZ")
