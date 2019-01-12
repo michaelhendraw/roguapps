@@ -260,13 +260,8 @@ def handle_postback(event):
         
         # create rich menu material
         rich_menu = session['rich_menu']
-        print("\n\n\nHERE, rich_menu_old:", rich_menu)
-        
         rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
         rich_menu.update(rich_menu_add)
-
-        print("\n\n\nHERE, rich_menu_add:", rich_menu_add)
-        print("\n\n\nHERE, rich_menu_new:", rich_menu)
 
         redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu}))
         line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
@@ -335,7 +330,7 @@ def handle_postback(event):
             flex_message = FlexSendMessage(
                 alt_text='Carousel Topik',
                 contents=CarouselContainer(
-                    contents=[contents]
+                    contents=contents
                 )
             )
 
@@ -417,58 +412,78 @@ def test_db():
 def test_template():
     conn = model.Conn()
 
-    query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
-    conn.query(query_select, (1,))
-    rows = conn.cursor.fetchall()
-    if rows == None: # subject is empty
+    # get all subject by class_id
+    query_select_subject = 'SELECT * FROM subject WHERE id = %s'
+    conn.query(query_select_subject, '2')
+    row_subject = conn.cursor.fetchone()
+
+    # get all topic by subject_id
+    query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
+    conn.query(query_select_topic, '1')
+    rows_topic = conn.cursor.fetchall()
+    if rows_topic == None: # topic is empty
         line_bot_api.reply_message(
             event.reply_token,[
                 TextMessage(
-                    text=constant.SUBJECT_EMPTY
+                    text=constant.TOPIC_EMPTY
                 )
             ]
         )
-    else: # subject exist
+    else: # topic exist
         contents = []
-        for row in rows:
-            contents.append(BubbleContainer(
-                direction='ltr',
-                hero=ImageComponent(
-                    url=row['image'],
-                    size='full',
-                    aspect_ratio='20:13',
-                    aspect_mode='cover'
-                ),
-                body=BoxComponent(
-                    layout='vertical',
-                    contents=[
-                        ButtonComponent(
-                            action=PostbackAction(
-                                label='Materi',
-                                text='Materi',
-                                data='action=material&subject_id='+str(row['id'])
+        for row in rows_topic:
+            contents.append(
+                BubbleContainer(
+                    direction='ltr',
+                    body=BoxComponent(
+                        layout='vertical',
+                        contents=[
+                            TextComponent(
+                                text=str(row['name']),
+                                margin='md',
+                                size='xl',
+                                align='center',
+                                gravity='center',
+                                weight='bold'
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label='Belajar',
+                                    text='Belajar',
+                                    data='action=material_learn&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                )
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label='Diskusi',
+                                    text='Diskusi',
+                                    data='action=material_discussion&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])
+                                )
+                            ),
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label='Latihan Soal',
+                                    text='Latihan Soal',
+                                    data='action=material_quiz&subject_id='+str(row_subject['id'])+'&topic_id='+str(row['id'])+'&sequence=0'
+                                )
                             )
-                        ),
-                        ButtonComponent(
-                            action=PostbackAction(
-                                label='Latihan UN',
-                                text='Latihan UN',
-                                data='action=final_quiz&subject_id='+str(row['id'])
-                            )
-                        ),
-                    ]
+                        ]
+                    )
                 )
-            ))
-
+            )
+            
+        
         flex_message = FlexSendMessage(
-            alt_text='Carousel Mapel',
+            alt_text='Carousel Topik',
             contents=CarouselContainer(
                 contents=contents
             )
         )
-    print('HERE, flex_message:', flex_message)
+
+        print('HERE, contents:', contents)
+        print('HERE, flex_message:', flex_message)
     
-    return 'OK'
+        return 'OK'
 
 @app.route('/test_session')
 def test_session():
