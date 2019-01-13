@@ -82,11 +82,11 @@ def handle_text_message(event):
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
-    print('\n\nHERE, request event:', event)
-    print("\n\nHERE, session:", session)
+    print('\n\n\nHERE, request event:', event)
+    print("\n\n\nHERE, session:", session)
 
     if session == {}:
-        print("\n\nHERE # USER PERTAMA KALI BUKA")
+        print("\n\n\nHERE # USER PERTAMA KALI BUKA")
         redis.set(line_user_id,json.dumps({'status':'login'}))
 
         remove_rich_menu(line_user_id)
@@ -103,7 +103,7 @@ def handle_text_message(event):
         )
     else:
         if 'login' in session['status']:
-            print("\n\nHERE # PROSES LOGIN")
+            print("\n\n\nHERE # PROSES LOGIN")
             text = text.replace(' ', '')
             texts = text.split('-')
 
@@ -137,7 +137,7 @@ def handle_text_message(event):
                             ]
                         )
                     else:
-                        print("\n\nHERE # LOGIN BERHASIL")
+                        print("\n\n\nHERE # LOGIN BERHASIL")
 
                         # create rich menu
                         rich_menu = create_rich_menu(line_user_id)
@@ -154,7 +154,7 @@ def handle_text_message(event):
                         )
 
                 else:
-                    print("\n\nHERE # VALIDASI LOGIN GAGAL")
+                    print("\n\n\nHERE # VALIDASI LOGIN GAGAL")
                     line_bot_api.reply_message(
                         event.reply_token,[
                             TextMessage(
@@ -166,7 +166,7 @@ def handle_text_message(event):
                         ]
                     )
         elif 'home' in session['status']:
-            print("\n\nHERE, HOME")
+            print("\n\n\n# session: home, rich menu: home")
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
 
             line_bot_api.reply_message(
@@ -194,15 +194,29 @@ def handle_postback(event):
         ps = p.split('=')
         postback[ps[0]] = ps[1]
 
-    print('\n\nHERE, request event:', event)
-    print("\n\nHERE, session:", session)
-    print("\n\nHERE, postback:", postback)
+    print('\n\n\nHERE, request event:', event)
+    print("\n\n\nHERE, postback:", postback)
 
-    if 'home' in session['status']:
+    if 'login' in session['status']: # BELUM LOGIN
+        print("\n\n\n# session: login, action: -, rich menu: -")
+
+        remove_rich_menu(line_user_id)
+        
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text=constant.WELCOME_APP
+                ),
+                TextMessage(
+                    text=constant.LOGIN
+                )
+            ]
+        )
+    else: # SUDAH LOGIN
+        # MATERIAL
         if 'material' in postback['action']:
-            print("\n\nHERE # MATERIAL")
+            print("\n\n\n# session: home, action: material, rich menu: material")
 
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_subject','rich_menu':session['rich_menu']}))
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
             # get all subject by class_id
@@ -236,7 +250,7 @@ def handle_postback(event):
                                         action=PostbackAction(
                                             label='Materi',
                                             text='Materi',
-                                            data='action=material_subject&subject_id='+str(row['id'])
+                                            data='action=material_topic&subject_id='+str(row['id'])
                                         )
                                     ),
                                 
@@ -252,38 +266,29 @@ def handle_postback(event):
                     )
                 )
                 line_bot_api.reply_message(event.reply_token, flex_message)
-        elif 'final_quiz' in postback['action']:
-            print("\n\nHERE, FINAL QUIZ")
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'final_quiz','rich_menu':session['rich_menu']}))
+        elif 'material_topic' in postback['action']:
+            print("\n\n\n# session: home, action: material_topic, rich menu: material")
             
-            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
-    elif 'material_subject' in session['status']:
-        print("\n\nHERE # MATERIAL SUBJECT")
-        
-        # create rich menu material
-        rich_menu = session['rich_menu']
-        rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
-        rich_menu.update(rich_menu_add)
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
-        redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'material_topic','rich_menu':rich_menu}))
-        line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
+            # update rich menu, create rich menu material
+            rich_menu = session['rich_menu']
+            rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
+            rich_menu.update(rich_menu_add)
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
-        flex_message = show_material_topic(event, conn, postback)
+            flex_message = show_material_topic(event, conn, postback)
 
-        line_bot_api.reply_message(event.reply_token, flex_message)
-    elif 'material_topic' in session['status']:
-        print("\n\nHERE # MATERIAL TOPIC")
-
-        if 'material_learn' in postback['action']:
-            print("\n\nHERE # MATERIAL LEARN")
+            line_bot_api.reply_message(event.reply_token, flex_message)
+        elif 'material_learn' in postback['action']:
+            print("\n\n\n# session: home, action: material_learn, rich menu: material_learn")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
             
             seq = 1
             if 'sequence' in postback:
                 seq = int(postback['sequence'])
-            
-            seq_before = seq-1
+
             seq_next = seq+1
             
             # get next material by topic_id
@@ -379,9 +384,8 @@ def handle_postback(event):
                 flex_messages.append(flex_message_material_topic)
 
             line_bot_api.reply_message(event.reply_token, flex_messages)
-
         elif 'material_quiz' in postback['action']:
-            print("\n\nHERE # MATERIAL QUIZ")
+            print("\n\n\n# session: home, action: material_quiz, rich menu: material_learn")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
 
@@ -420,8 +424,7 @@ def handle_postback(event):
             seq = 1
             if 'sequence' in postback:
                 seq = int(postback['sequence'])
-            
-            seq_before = seq-1
+
             seq_next = seq+1
 
             # get quiz by material_id
@@ -516,12 +519,28 @@ def handle_postback(event):
 
                 print("\n\n\nHERE, flex_messages:", flex_messages)
                 line_bot_api.reply_message(event.reply_token, flex_messages)
-            
         elif 'material_discussion' in postback['action']:
-            print("\n\nHERE # MATERIAL DISCUSSION")
+            print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
+        # FINAL QUIZ
+        elif 'final_quiz' in postback['action']:
+            print("\n\n\n# session: home, action: final_quiz, rich menu: final_quiz")
+            
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
+        # HOME
+        else:
+            print("\n\n\n# session: home, action: -, rich menu: home")
 
+            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
+
+            line_bot_api.reply_message(
+                event.reply_token,[
+                    TextMessage(
+                        text=constant.WELCOME_HOME % (session['name']),
+                    )
+                ]
+            )
 # --------------------------------------------------------
 
 @app.route('/test_db/<s>/<qdi>/<ca>/<a>', methods=['GET'])
@@ -537,8 +556,7 @@ def test_db(s,qdi,ca,a):
     seq = 1
     if 'sequence' in postback:
         seq = int(postback['sequence'])
-    
-    seq_before = seq-1
+
     seq_next = seq+1
 
     flex_messages = []
@@ -1094,6 +1112,7 @@ def remove_rich_menu(line_user_id):
     line_bot_api.unlink_rich_menu_from_user(line_user_id)
 
 # --------------------------------------------------------
+
 def show_material_topic(event, conn, postback):
     # get all subject by class_id
     query_select_subject = 'SELECT * FROM subject WHERE id = %s'
