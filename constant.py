@@ -27,5 +27,14 @@ LOGIN_FAIL = 'Maaf, data tidak ditemukan.'
 
 # HOME
 WELCOME_HOME = 'Hai %s, silahkan pilih menu navigasi untuk melanjutkan belajar.'
+
+# SUBJECT
 SUBJECT_EMPTY = 'Maaf, kelas kamu belum memiliki mapel.'
+
+# TOPIC
 TOPIC_EMPTY = 'Maaf, mapel ini belum memiliki topik.'
+
+# QUIZ
+QUIZ_EMPTY = 'Maaf, topik ini belum memiliki pertanyaan.'
+QUIZ_INCORRECT_ANSWER = 'Ops, jawaban kamu salah. Jawaban yang benar adalah %s'
+QUIZ_CORRECT_ANSWER = 'Ya, jawaban kamu benar'
