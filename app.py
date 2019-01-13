@@ -541,6 +541,7 @@ def handle_postback(event):
                     )
                 ]
             )
+    return
 # --------------------------------------------------------
 
 @app.route('/test_db/<s>/<qdi>/<ca>/<a>', methods=['GET'])
