@@ -379,6 +379,12 @@ def handle_postback(event):
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
 
             flex_messages = []
+            
+            seq = 1
+            if 'sequence' in postback:
+                seq = int(postback['sequence'])
+
+            seq_next = seq+1
 
             # check answer before
             if 'quiz_detail_id' in postback:
@@ -420,12 +426,6 @@ def handle_postback(event):
                     flex_messages.append(flex_message_material_topic)
                 
                 line_bot_api.reply_message(event.reply_token, flex_messages)
-
-            seq = 1
-            if 'sequence' in postback:
-                seq = int(postback['sequence'])
-
-            seq_next = seq+1
 
             # get quiz by material_id
             query_select_question = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
