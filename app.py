@@ -214,7 +214,7 @@ def handle_postback(event):
         )
     else: # SUDAH LOGIN
         # MATERIAL
-        if 'material' in postback['action']:
+        if 'material' == postback['action']:
             print("\n\n\n# session: home, action: material, rich menu: material")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
@@ -248,8 +248,8 @@ def handle_postback(event):
                                 contents=[
                                     ButtonComponent(
                                         action=PostbackAction(
-                                            label='Materi',
-                                            text='Materi',
+                                            label=row['name'],
+                                            text=row['name'],
                                             data='action=material_topic&subject_id='+str(row['id'])
                                         )
                                     ),
@@ -266,7 +266,7 @@ def handle_postback(event):
                     )
                 )
                 line_bot_api.reply_message(event.reply_token, flex_message)
-        elif 'material_topic' in postback['action']:
+        elif 'material_topic' == postback['action']:
             print("\n\n\n# session: home, action: material_topic, rich menu: material")
             
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
@@ -280,7 +280,7 @@ def handle_postback(event):
             flex_message = show_material_topic(event, conn, postback)
 
             line_bot_api.reply_message(event.reply_token, flex_message)
-        elif 'material_learn' in postback['action']:
+        elif 'material_learn' == postback['action']:
             print("\n\n\n# session: home, action: material_learn, rich menu: material_learn")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_learn'])
@@ -384,7 +384,7 @@ def handle_postback(event):
                 flex_messages.append(flex_message_material_topic)
 
             line_bot_api.reply_message(event.reply_token, flex_messages)
-        elif 'material_quiz' in postback['action']:
+        elif 'material_quiz' == postback['action']:
             print("\n\n\n# session: home, action: material_quiz, rich menu: material_learn")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
@@ -519,12 +519,12 @@ def handle_postback(event):
 
                 print("\n\n\nHERE, flex_messages:", flex_messages)
                 line_bot_api.reply_message(event.reply_token, flex_messages)
-        elif 'material_discussion' in postback['action']:
+        elif 'material_discussion' == postback['action']:
             print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_discussion'])
         # FINAL QUIZ
-        elif 'final_quiz' in postback['action']:
+        elif 'final_quiz' == postback['action']:
             print("\n\n\n# session: home, action: final_quiz, rich menu: final_quiz")
             
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
