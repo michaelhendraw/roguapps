@@ -260,13 +260,7 @@ def handle_postback(event):
             
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material'])
 
-            # update rich menu, create rich menu material
-            rich_menu = session['rich_menu']
-            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-            rich_menu.update(rich_menu_add)
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-
-            flex_message = show_material_topic(event, conn, postback)
+            flex_message = show_material_topic(event, conn, session, postback)
 
             line_bot_api.reply_message(event.reply_token, flex_message)
         elif 'material_learn' == postback['action']:
@@ -369,7 +363,7 @@ def handle_postback(event):
                 flex_messages.append(flex_message)
 
             if row_material_next is None:
-                flex_message_material_topic = show_material_topic(event, conn, postback)
+                flex_message_material_topic = show_material_topic(event, conn, session, postback)
                 flex_messages.append(flex_message_material_topic)
 
             line_bot_api.reply_message(event.reply_token, flex_messages)
@@ -422,7 +416,7 @@ def handle_postback(event):
                 row_question_next = conn.cursor.fetchone()
                 
                 if row_question_next is None:
-                    flex_message_material_topic = show_material_topic(event, conn, postback)
+                    flex_message_material_topic = show_material_topic(event, conn, session, postback)
                     flex_messages.append(flex_message_material_topic)
                 
                 line_bot_api.reply_message(event.reply_token, flex_messages)
@@ -977,7 +971,13 @@ def remove_rich_menu(line_user_id):
 
 # --------------------------------------------------------
 
-def show_material_topic(event, conn, postback):
+def show_material_topic(event, conn, session, postback):
+    # update rich menu, create rich menu material
+    rich_menu = session['rich_menu']
+    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+    rich_menu.update(rich_menu_add)
+    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+
     # get all subject by class_id
     query_select_subject = 'SELECT * FROM subject WHERE id = %s'
     conn.query(query_select_subject, (postback['subject_id'],))
