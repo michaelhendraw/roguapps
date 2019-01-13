@@ -311,7 +311,8 @@ def handle_postback(event):
                                     size='xl',
                                     align='center',
                                     gravity='center',
-                                    weight='bold'
+                                    weight='bold',
+                                    wrap=1
                                 ),
                             ]
                         ),
@@ -321,7 +322,8 @@ def handle_postback(event):
                                 TextComponent(
                                     text=str(row_material['description']),
                                     align='start',
-                                    gravity='center'
+                                    gravity='center',
+                                    wrap=1
                                 )
                             ]
                         )
@@ -342,7 +344,8 @@ def handle_postback(event):
                                     size='xl',
                                     align='center',
                                     gravity='center',
-                                    weight='bold'
+                                    weight='bold',
+                                    wrap=1
                                 ),
                             ]
                         ),
@@ -352,7 +355,8 @@ def handle_postback(event):
                                 TextComponent(
                                     text=str(row_material['description']),
                                     align='start',
-                                    gravity='center'
+                                    gravity='center',
+                                    wrap=1
                                 ),
                                 # the different is here in button
                                 ButtonComponent(
@@ -401,10 +405,11 @@ def handle_postback(event):
                                 TextComponent(
                                     text=feedback_answer,
                                     margin='md',
-                                    size='lg',
+                                    size='md',
                                     align='center',
                                     gravity='center',
-                                    weight='bold'
+                                    weight='bold',
+                                    wrap=1
                                 ),
                             ]
                         )
@@ -471,16 +476,19 @@ def handle_postback(event):
                                         size='lg',
                                         align='center',
                                         gravity='center',
-                                        weight='bold'
+                                        weight='bold',
+                                        wrap=1
                                     ),
                                     TextComponent(
                                         text=row_question['question'],
                                         margin='md',
-                                        align='start'
+                                        align='start',
+                                        wrap=1
                                     ),
                                     TextComponent(
                                         text='\n'.join(str(x) for x in answers) ,
-                                        margin='sm'
+                                        margin='sm',
+                                        wrap=1
                                     ),
                             ]
                         ),
@@ -503,8 +511,10 @@ def handle_postback(event):
                 row_question_next = conn.cursor.fetchone()
                 if row_question_next is None:
                     flex_message_material_topic = show_material_topic(event, conn, postback)
+                    print("\n\n\nHERE, flex_message_material_topic:", flex_message_material_topic)
                     flex_messages.append(flex_message_material_topic)
 
+                print("\n\n\nHERE, flex_messages:", flex_messages)
                 line_bot_api.reply_message(event.reply_token, flex_messages)
             
         elif 'material_discussion' in postback['action']:
