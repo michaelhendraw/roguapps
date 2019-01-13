@@ -262,7 +262,7 @@ def handle_postback(event):
 
             # update rich menu, create rich menu material
             rich_menu = session['rich_menu']
-            rich_menu_add = create_rich_menu_material(line_user_id, postback['subject_id'])
+            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
             rich_menu.update(rich_menu_add)
             redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
@@ -802,7 +802,7 @@ def create_rich_menu(line_user_id):
 
     return rich_menu
 
-def create_rich_menu_material(line_user_id, subject_id):
+def create_rich_menu_material_topic(line_user_id, subject_id, topic_id):
     rich_menu = {}
 
     # material_learn
@@ -825,7 +825,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Kembali',
                     text='Kembali',
-                    data='action=material&subject_id='+subject_id
+                    data='action=material'
                 )
             ),
             RichMenuArea(
@@ -838,7 +838,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Latihan Soal',
                     text='Latihan Soal',
-                    data='action=material_quiz&subject_id='+subject_id
+                    data='action=material_quiz&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
             RichMenuArea(
@@ -851,7 +851,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Diskusi',
                     text='Diskusi',
-                    data='action=material_discussion&subject_id='+subject_id
+                    data='action=material_discussion&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
         ]
@@ -880,7 +880,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Kembali',
                     text='Kembali',
-                    data='action=material&subject_id='+subject_id
+                    data='action=material'
                 )
             ),
             RichMenuArea(
@@ -893,7 +893,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Belajar',
                     text='Belajar',
-                    data='action=material_learn&subject_id='+subject_id
+                    data='action=material_learn&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
             RichMenuArea(
@@ -906,7 +906,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Diskusi',
                     text='Diskusi',
-                    data='action=material_discussion&subject_id='+subject_id
+                    data='action=material_discussion&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
         ]
@@ -935,7 +935,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Kembali',
                     text='Kembali',
-                    data='action=material&subject_id='+subject_id
+                    data='action=material'
                 )
             ),
             RichMenuArea(
@@ -948,7 +948,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Belajar',
                     text='Belajar',
-                    data='action=material_learn&subject_id='+subject_id
+                    data='action=material_learn&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
             RichMenuArea(
@@ -961,7 +961,7 @@ def create_rich_menu_material(line_user_id, subject_id):
                 action=PostbackAction(
                     label='Latihan Soal',
                     text='Latihan Soal',
-                    data='action=material_quiz&subject_id='+subject_id
+                    data='action=material_quiz&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
         ]
