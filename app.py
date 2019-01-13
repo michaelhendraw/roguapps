@@ -374,7 +374,7 @@ def handle_postback(event):
 
             line_bot_api.reply_message(event.reply_token, flex_messages)
         elif 'material_quiz' == postback['action']:
-            print("\n\n\n# session: home, action: material_quiz, rich menu: material_learn")
+            print("\n\n\n# session: home, action: material_quiz, rich menu: material_quiz")
 
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['material_quiz'])
 
@@ -501,10 +501,13 @@ def handle_postback(event):
                 query_select_question_next = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
                 conn.query(query_select_question_next, (str(postback['topic_id']), seq_next))
                 row_question_next = conn.cursor.fetchone()
+                
                 if row_question_next is None:
                     flex_message_material_topic = show_material_topic(event, conn, postback)
+                    print("\n\n\nflex_message_material_topic:", flex_message_material_topic)
                     flex_messages.append(flex_message_material_topic)
 
+                print("\n\n\nflex_messages:", flex_messages)
                 line_bot_api.reply_message(event.reply_token, flex_messages)
         elif 'material_discussion' == postback['action']:
             print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
