@@ -972,6 +972,8 @@ def remove_rich_menu(line_user_id):
 # --------------------------------------------------------
 
 def show_material_topic(event, conn, session, postback):
+    line_user_id = event.source.user_id
+    
     # update rich menu, create rich menu material
     rich_menu = session['rich_menu']
     rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
