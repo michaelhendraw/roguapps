@@ -265,19 +265,18 @@ def handle_postback(event):
             line_bot_api.reply_message(event.reply_token, flex_message)
         elif 'material_learn' == postback['action']:
             print("\n\n\n# session: home, action: material_learn, rich menu: material_learn")
-
-            # update rich menu, create rich menu material
-            rich_menu = session['rich_menu']
-            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-            rich_menu.update(rich_menu_add)
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-
-            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
             
             seq = 1
             if 'sequence' in postback:
                 seq = int(postback['sequence'])
-
+            else:
+                # sequence gak ada = asumsi pertama masuk action ini, jadi update rich menu = create rich menu material topic
+                rich_menu = session['rich_menu']
+                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                rich_menu.update(rich_menu_add)
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
+            
             seq_next = seq+1
             
             # get next material by topic_id
@@ -376,19 +375,18 @@ def handle_postback(event):
         elif 'material_quiz' == postback['action']:
             print("\n\n\n# session: home, action: material_quiz, rich menu: material_quiz")
 
-            # update rich menu, create rich menu material
-            rich_menu = session['rich_menu']
-            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-            rich_menu.update(rich_menu_add)
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-
-            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
-
             flex_messages = []
             
             seq = 1
             if 'sequence' in postback:
                 seq = int(postback['sequence'])
+            else:
+                # sequence gak ada = asumsi pertama masuk action ini, jadi update rich menu = create rich menu material topic
+                rich_menu = session['rich_menu']
+                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                rich_menu.update(rich_menu_add)
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
 
             seq_next = seq+1
 
