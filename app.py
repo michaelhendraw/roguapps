@@ -390,129 +390,159 @@ def handle_postback(event):
 
             seq_next = seq+1
 
-            # check answer before
-            if 'quiz_detail_id' in postback:
-                feedback_answer = ''
-                if postback['answer'] != postback['correct_answer']: # invalid answer
-                    feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (postback['correct_answer'])
-                else:
-                    feedback_answer = constant.QUIZ_CORRECT_ANSWER
+            # get next quiz by material_id
+            query_select_question_next = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
+            conn.query(query_select_question_next, (str(postback['topic_id']), seq_next))
+            row_question_next = conn.cursor.fetchone()
+            
+            if row_question_next is None:
+                # check answer before
+                if 'quiz_detail_id' in postback:
+                    feedback_answer = ''
+                    if postback['answer'] != postback['correct_answer']: # invalid answer
+                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (postback['correct_answer'])
+                    else:
+                        feedback_answer = constant.QUIZ_CORRECT_ANSWER
 
-                flex_message = FlexSendMessage(
-                    alt_text='Carousel Latihan Soal',
-                    contents=BubbleContainer(
-                        direction='ltr',
-                        body=BoxComponent(
-                            layout='vertical',
-                            contents=[
-                                TextComponent(
-                                    text=feedback_answer,
-                                    margin='md',
-                                    size='md',
-                                    align='center',
-                                    gravity='center',
-                                    weight='bold',
-                                    wrap=True
-                                ),
-                            ]
-                        )
-                    )
-                )
-                flex_messages.append(flex_message)
-
-                # get next quiz by material_id
-                query_select_question_next = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
-                conn.query(query_select_question_next, (str(postback['topic_id']), seq_next))
-                row_question_next = conn.cursor.fetchone()
-                
-                if row_question_next is None:
-                    flex_message_material_topic = show_material_topic(event, conn, postback)
-                    flex_messages.append(flex_message_material_topic)
-                
-                line_bot_api.reply_message(event.reply_token, flex_messages)
-
-            # get quiz by material_id
-            query_select_question = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
-            conn.query(query_select_question, (str(postback['topic_id']), seq))
-            row_question = conn.cursor.fetchone()
-
-            if row_question is None: # quiz is empty
-                line_bot_api.reply_message(
-                    event.reply_token,[
-                        TextMessage(
-                            text=constant.QUIZ_EMPTY
-                        )
-                    ]
-                )
-            else:
-                # get quiz_answer by quiz_detail_id
-                query_select_answer = 'SELECT * FROM quiz_answer WHERE quiz_detail_id = %s ORDER BY random()'
-                conn.query(query_select_answer, (row_question['id'],))
-                rows_answer = conn.cursor.fetchall()
-
-                answers = []
-                answers_button = []
-                options = ['A', 'B', 'C', 'D', 'E']
-                o = 0
-                for row in rows_answer:
-                    answers.append(options[o]+'. '+row['answer'])
-                    answers_button.append(
-                        ButtonComponent(
-                            action=PostbackAction(
-                                label=options[o],
-                                text=options[o],
-                                data='action=material_quiz&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)+'&quiz_detail_id='+str(row_question['id'])+'&correct_answer='+str(row_question['correct_answer'])+'&answer='+str(row['answer'])
-                            ),
-                            flex=1,
-                            margin='sm',
-                            style='primary'
-                        )
-                    )
-                    o+=1
-
-                flex_message = FlexSendMessage(
-                    alt_text='Carousel Latihan Soal',
-                    contents=BubbleContainer(
-                        direction='ltr',
-                        body=BoxComponent(
-                            layout='vertical',
-                            contents=[
+                    flex_message = FlexSendMessage(
+                        alt_text='Carousel Latihan Soal',
+                        contents=BubbleContainer(
+                            direction='ltr',
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[
                                     TextComponent(
-                                        text='Pertanyaan '+str(seq),
+                                        text=feedback_answer,
                                         margin='md',
-                                        size='lg',
+                                        size='md',
                                         align='center',
                                         gravity='center',
                                         weight='bold',
                                         wrap=True
                                     ),
-                                    TextComponent(
-                                        text=row_question['question'],
-                                        margin='md',
-                                        align='start',
-                                        wrap=True
-                                    ),
-                                    TextComponent(
-                                        text='\n'.join(str(x) for x in answers) ,
-                                        margin='sm',
-                                        wrap=True
-                                    ),
-                            ]
-                        ),
-                        footer=BoxComponent(
-                            layout='horizontal',
-                            contents=[
-                                BoxComponent(
-                                    layout='horizontal',
-                                    contents=answers_button
-                                )
-                            ]
+                                ]
+                            )
                         )
                     )
-                )
-                flex_messages.append(flex_message)
+                    flex_messages.append(flex_message)
+            
+                flex_message_material_topic = show_material_topic(event, conn, postback)
+                flex_messages.append(flex_message_material_topic)
 
                 line_bot_api.reply_message(event.reply_token, flex_messages)
+            else:
+                # check answer before
+                if 'quiz_detail_id' in postback:
+                    feedback_answer = ''
+                    if postback['answer'] != postback['correct_answer']: # invalid answer
+                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (postback['correct_answer'])
+                    else:
+                        feedback_answer = constant.QUIZ_CORRECT_ANSWER
+
+                    flex_message = FlexSendMessage(
+                        alt_text='Carousel Latihan Soal',
+                        contents=BubbleContainer(
+                            direction='ltr',
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[
+                                    TextComponent(
+                                        text=feedback_answer,
+                                        margin='md',
+                                        size='md',
+                                        align='center',
+                                        gravity='center',
+                                        weight='bold',
+                                        wrap=True
+                                    ),
+                                ]
+                            )
+                        )
+                    )
+                    flex_messages.append(flex_message)
+            
+                # get quiz by material_id
+                query_select_question = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
+                conn.query(query_select_question, (str(postback['topic_id']), seq))
+                row_question = conn.cursor.fetchone()
+
+                if row_question is None: # quiz is empty
+                    line_bot_api.reply_message(
+                        event.reply_token,[
+                            TextMessage(
+                                text=constant.QUIZ_EMPTY
+                            )
+                        ]
+                    )
+                else:
+                    # get quiz_answer by quiz_detail_id
+                    query_select_answer = 'SELECT * FROM quiz_answer WHERE quiz_detail_id = %s ORDER BY random()'
+                    conn.query(query_select_answer, (row_question['id'],))
+                    rows_answer = conn.cursor.fetchall()
+
+                    answers = []
+                    answers_button = []
+                    options = ['A', 'B', 'C', 'D', 'E']
+                    o = 0
+                    for row in rows_answer:
+                        answers.append(options[o]+'. '+row['answer'])
+                        answers_button.append(
+                            ButtonComponent(
+                                action=PostbackAction(
+                                    label=options[o],
+                                    text=options[o],
+                                    data='action=material_quiz&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)+'&quiz_detail_id='+str(row_question['id'])+'&correct_answer='+str(row_question['correct_answer'])+'&answer='+str(row['answer'])
+                                ),
+                                flex=1,
+                                margin='sm',
+                                style='primary'
+                            )
+                        )
+                        o+=1
+
+                    flex_message = FlexSendMessage(
+                        alt_text='Carousel Latihan Soal',
+                        contents=BubbleContainer(
+                            direction='ltr',
+                            body=BoxComponent(
+                                layout='vertical',
+                                contents=[
+                                        TextComponent(
+                                            text='Pertanyaan '+str(seq),
+                                            margin='md',
+                                            size='lg',
+                                            align='center',
+                                            gravity='center',
+                                            weight='bold',
+                                            wrap=True
+                                        ),
+                                        TextComponent(
+                                            text=row_question['question'],
+                                            margin='md',
+                                            align='start',
+                                            wrap=True
+                                        ),
+                                        TextComponent(
+                                            text='\n'.join(str(x) for x in answers) ,
+                                            margin='sm',
+                                            wrap=True
+                                        ),
+                                ]
+                            ),
+                            footer=BoxComponent(
+                                layout='horizontal',
+                                contents=[
+                                    BoxComponent(
+                                        layout='horizontal',
+                                        contents=answers_button
+                                    )
+                                ]
+                            )
+                        )
+                    )
+                    flex_messages.append(flex_message)
+
+                    line_bot_api.reply_message(event.reply_token, flex_messages)
         elif 'material_discussion' == postback['action']:
             print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
 
