@@ -165,17 +165,6 @@ def handle_text_message(event):
                             )
                         ]
                     )
-        elif 'home' in session['status']:
-            print("\n\n\n# session: home, rich menu: home")
-            line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['home'])
-
-            line_bot_api.reply_message(
-                event.reply_token,[
-                    TextMessage(
-                        text=constant.WELCOME_HOME % (session['name']),
-                    )
-                ]
-            )
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
@@ -541,7 +530,7 @@ def handle_postback(event):
                     )
                 ]
             )
-    return
+    
 # --------------------------------------------------------
 
 @app.route('/test_db/<s>/<qdi>/<ca>/<a>', methods=['GET'])
