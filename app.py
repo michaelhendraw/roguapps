@@ -184,6 +184,7 @@ def handle_postback(event):
         postback[ps[0]] = ps[1]
 
     print('\n\n\nHERE, request event:', event)
+    print("\n\n\nHERE, session:", session)
     print("\n\n\nHERE, postback:", postback)
 
     if 'login' in session['status']: # BELUM LOGIN
@@ -266,16 +267,17 @@ def handle_postback(event):
         elif 'material_learn' == postback['action']:
             print("\n\n\n# session: home, action: material_learn, rich menu: material_learn")
             
+            if 'rich_menu' in session:
+                rich_menu = session['rich_menu']
+                if rich_menu == '':
+                    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                    rich_menu.update(rich_menu_add)
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
+
             seq = 1
             if 'sequence' in postback:
                 seq = int(postback['sequence'])
-            else:
-                # sequence gak ada = asumsi pertama masuk action ini, jadi update rich menu = create rich menu material topic
-                rich_menu = session['rich_menu']
-                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-                rich_menu.update(rich_menu_add)
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
             
             seq_next = seq+1
             
@@ -375,98 +377,69 @@ def handle_postback(event):
         elif 'material_quiz' == postback['action']:
             print("\n\n\n# session: home, action: material_quiz, rich menu: material_quiz")
 
-            flex_messages = []
-            
-            seq = 1
-            if 'sequence' in postback:
-                seq = int(postback['sequence'])
-            else:
-                # sequence gak ada = asumsi pertama masuk action ini, jadi update rich menu = create rich menu material topic
-                rich_menu = session['rich_menu']
+        if 'rich_menu' in session:
+            rich_menu = session['rich_menu']
+            if rich_menu == '':
                 rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
                 rich_menu.update(rich_menu_add)
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                 line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
 
+            flex_messages = []
+            
+            # get sequence
+            seq = 1
+            if 'sequence' in postback:
+                seq = int(postback['sequence'])
+
             seq_next = seq+1
 
-            # get next quiz by material_id
-            query_select_question_next = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
-            conn.query(query_select_question_next, (str(postback['topic_id']), seq_next))
-            row_question_next = conn.cursor.fetchone()
-            
-            if row_question_next is None:
-                # check answer before
-                if 'quiz_detail_id' in postback:
-                    feedback_answer = ''
-                    if postback['answer'] != postback['correct_answer']: # invalid answer
-                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (postback['correct_answer'])
+            # check answer before
+            if 'answer' in postback:
+                feedback_answer = ''
+
+                if str(seq) in session['material_quiz']:
+                    quiz = session['material_quiz'][str(seq)]
+                    if postback['answer'] != quiz['correct_answer']: # invalid answer
+                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (quiz['correct_answer'])
                     else:
                         feedback_answer = constant.QUIZ_CORRECT_ANSWER
 
-                    flex_message = FlexSendMessage(
-                        alt_text='Carousel Latihan Soal',
-                        contents=BubbleContainer(
-                            direction='ltr',
-                            body=BoxComponent(
-                                layout='vertical',
-                                contents=[
-                                    TextComponent(
-                                        text=feedback_answer,
-                                        margin='md',
-                                        size='md',
-                                        align='center',
-                                        gravity='center',
-                                        weight='bold',
-                                        wrap=True
-                                    ),
-                                ]
-                            )
+                flex_message = FlexSendMessage(
+                    alt_text='Carousel Latihan Soal',
+                    contents=BubbleContainer(
+                        direction='ltr',
+                        body=BoxComponent(
+                            layout='vertical',
+                            contents=[
+                                TextComponent(
+                                    text=feedback_answer,
+                                    margin='md',
+                                    size='md',
+                                    align='center',
+                                    gravity='center',
+                                    weight='bold',
+                                    wrap=True
+                                ),
+                            ]
                         )
                     )
-                    flex_messages.append(flex_message)
-            
-                flex_message_material_topic = show_material_topic(event, conn, postback)
-                flex_messages.append(flex_message_material_topic)
+                )
+                flex_messages.append(flex_message)
 
-                line_bot_api.reply_message(event.reply_token, flex_messages)
+            next_quiz = {}
+            # get next quiz from redis
+            if 'material_quiz' in session:
+                if str(seq_next) in session['material_quiz']:
+                    next_quiz = session['material_quiz'][str(seq_next)]
+            # get all random quiz from db
             else:
-                # check answer before
-                if 'quiz_detail_id' in postback:
-                    feedback_answer = ''
-                    if postback['answer'] != postback['correct_answer']: # invalid answer
-                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (postback['correct_answer'])
-                    else:
-                        feedback_answer = constant.QUIZ_CORRECT_ANSWER
+                # get questions
+                query_select_questions = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s) OFFSET floor(RANDOM()*3) LIMIT 3'
+                conn.query(query_select_questions, (str(postback['topic_id'])))
+                rows_question = conn.cursor.fetchall()
 
-                    flex_message = FlexSendMessage(
-                        alt_text='Carousel Latihan Soal',
-                        contents=BubbleContainer(
-                            direction='ltr',
-                            body=BoxComponent(
-                                layout='vertical',
-                                contents=[
-                                    TextComponent(
-                                        text=feedback_answer,
-                                        margin='md',
-                                        size='md',
-                                        align='center',
-                                        gravity='center',
-                                        weight='bold',
-                                        wrap=True
-                                    ),
-                                ]
-                            )
-                        )
-                    )
-                    flex_messages.append(flex_message)
-            
-                # get quiz by material_id
-                query_select_question = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s AND sequence = %s)'
-                conn.query(query_select_question, (str(postback['topic_id']), seq))
-                row_question = conn.cursor.fetchone()
-
-                if row_question is None: # quiz is empty
+                if rows_question is None: # quiz is empty
                     line_bot_api.reply_message(
                         event.reply_token,[
                             TextMessage(
@@ -475,84 +448,111 @@ def handle_postback(event):
                         ]
                     )
                 else:
-                    # get quiz_answer by quiz_detail_id
-                    query_select_answer = 'SELECT * FROM quiz_answer WHERE quiz_detail_id = %s ORDER BY random()'
-                    conn.query(query_select_answer, (row_question['id'],))
-                    rows_answer = conn.cursor.fetchall()
+                    quizes = {}
+                    i = 1
+                    for row in rows_question:
+                        quizes[i] = {}
+                        quizes[i]['id'] = row['id']
+                        quizes[i]['question'] = row['question']
+                        quizes[i]['correct_answer'] = row['correct_answer']
+                        quizes[i]['solution'] = row['solution']
+                        quizes[i]['material_id'] = row['material_id']
+                        quizes[i]['answer'] = {}
+                        
+                        # get answers
+                        query_select_answer = 'SELECT * FROM quiz_answer WHERE quiz_detail_id = %s ORDER BY random()'
+                        conn.query(query_select_answer, (row['id'],))
+                        rows_answer = conn.cursor.fetchall()
 
-                    answers = []
-                    answers_button = []
-                    options = ['A', 'B', 'C', 'D', 'E']
-                    o = 0
-                    for row in rows_answer:
-                        answers.append(options[o]+'. '+row['answer'])
-                        answers_button.append(
-                            ButtonComponent(
-                                action=PostbackAction(
-                                    label=options[o],
-                                    text=options[o],
-                                    data='action=material_quiz&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)+'&quiz_detail_id='+str(row_question['id'])+'&correct_answer='+str(row_question['correct_answer'])+'&answer='+str(row['answer'])
-                                ),
-                                flex=1,
-                                margin='sm',
-                                style='primary'
-                            )
-                        )
-                        o+=1
+                        options = ['A', 'B', 'C', 'D', 'E']
+                        o = 0
+                        for row2 in rows_answer:
+                            quizes[i]['answer'][options[o]] = row2['answer']
+                            o+=1
+                        
+                        i+=1
 
-                    flex_message = FlexSendMessage(
-                        alt_text='Carousel Latihan Soal',
-                        contents=BubbleContainer(
-                            direction='ltr',
-                            body=BoxComponent(
-                                layout='vertical',
-                                contents=[
-                                        TextComponent(
-                                            text='Pertanyaan '+str(seq),
-                                            margin='md',
-                                            size='lg',
-                                            align='center',
-                                            gravity='center',
-                                            weight='bold',
-                                            wrap=True
-                                        ),
-                                        TextComponent(
-                                            text=row_question['question'],
-                                            margin='md',
-                                            align='start',
-                                            wrap=True
-                                        ),
-                                        TextComponent(
-                                            text='\n'.join(str(x) for x in answers) ,
-                                            margin='sm',
-                                            wrap=True
-                                        ),
-                                ]
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_quiz':quizes}))
+                    next_quiz = quizes[seq_next]
+
+            # back to topic if there are no next question
+            if len(next_quiz) == 0:
+                flex_message_material_topic = show_material_topic(event, conn, postback)
+                flex_messages.append(flex_message_material_topic)
+
+                line_bot_api.reply_message(event.reply_token, flex_messages)
+            else:
+                answers = []
+                answers_button = []
+                for key, value in next_quiz['answer'].items():
+                    answers.append(key +'. '+value)
+                    answers_button.append(
+                        ButtonComponent(
+                            action=PostbackAction(
+                                label=key,
+                                text=key,
+                                data='action=material_quiz&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)+'&quiz_detail_id='+str(next_quiz['id'])+'&answer='+value
                             ),
-                            footer=BoxComponent(
-                                layout='horizontal',
-                                contents=[
-                                    BoxComponent(
-                                        layout='horizontal',
-                                        contents=answers_button
-                                    )
-                                ]
-                            )
+                            flex=1,
+                            margin='sm',
+                            style='primary'
                         )
                     )
-                    flex_messages.append(flex_message)
+                
+                flex_message = FlexSendMessage(
+                    alt_text='Carousel Latihan Soal',
+                    contents=BubbleContainer(
+                        direction='ltr',
+                        body=BoxComponent(
+                            layout='vertical',
+                            contents=[
+                                    TextComponent(
+                                        text='Pertanyaan '+str(seq),
+                                        margin='md',
+                                        size='lg',
+                                        align='center',
+                                        gravity='center',
+                                        weight='bold',
+                                        wrap=True
+                                    ),
+                                    TextComponent(
+                                        text=next_quiz['question'],
+                                        margin='md',
+                                        align='start',
+                                        wrap=True
+                                    ),
+                                    TextComponent(
+                                        text='\n'.join(str(x) for x in answers) ,
+                                        margin='sm',
+                                        wrap=True
+                                    ),
+                            ]
+                        ),
+                        footer=BoxComponent(
+                            layout='horizontal',
+                            contents=[
+                                BoxComponent(
+                                    layout='horizontal',
+                                    contents=answers_button
+                                )
+                            ]
+                        )
+                    )
+                )
+                flex_messages.append(flex_message)
 
-                    line_bot_api.reply_message(event.reply_token, flex_messages)
+                line_bot_api.reply_message(event.reply_token, flex_messages)
+
         elif 'material_discussion' == postback['action']:
             print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
 
-            # update rich menu, create rich menu material
-            rich_menu = session['rich_menu']
-            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-            rich_menu.update(rich_menu_add)
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-
-            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+            if 'rich_menu' in session:
+                rich_menu = session['rich_menu']
+                if rich_menu == '':
+                    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                    rich_menu.update(rich_menu_add)
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
         # FINAL QUIZ
         elif 'final_quiz' == postback['action']:
             print("\n\n\n# session: home, action: final_quiz, rich menu: final_quiz")
@@ -574,16 +574,191 @@ def handle_postback(event):
     
 # --------------------------------------------------------
 
-@app.route('/test_db/<s>/<qdi>/<ca>/<a>', methods=['GET'])
-def test_db(s,qdi,ca,a):
+@app.route('/test_db', methods=['GET'])
+def test_db():
     conn = model.Conn()
 
-    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': s}
-    if qdi != 0:
-        postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': s, 'quiz_detail_id': qdi, 'correct_answer': ca, 'answer': a}
+    line_user_id = 'U991f707381b61d1d6e74f9c269b87665'
+
+    # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3'} # soal 1
+    # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '1', 'answer': '8 cm'} # correct
+    # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '2', 'answer': '13 cm2'} # incorrect
+    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '3', 'answer': '25 cm2'} # correct + back to topic
+
+    session_bytes = redis.get(line_user_id)
+    session = {}
+    if session_bytes is not None:
+        session = json.loads(session_bytes.decode("utf-8"))
+    print("\n\n\nHERE, session:", session)
 
     # START CODE HERE
-    flex_message = []
+    print("\n\n\n# session: home, action: material_quiz, rich menu: material_quiz")
+
+    if 'rich_menu' in session:
+        rich_menu = session['rich_menu']
+        if rich_menu == '':
+            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+            rich_menu.update(rich_menu_add)
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+
+    flex_messages = []
+    
+    # get sequence
+    seq = 1
+    if 'sequence' in postback:
+        seq = int(postback['sequence'])
+
+    seq_next = seq+1
+
+    # check answer before
+    if 'answer' in postback:
+        feedback_answer = ''
+
+        if str(seq) in session['material_quiz']:
+            quiz = session['material_quiz'][str(seq)]
+            if postback['answer'] != quiz['correct_answer']: # invalid answer
+                feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (quiz['correct_answer'])
+            else:
+                feedback_answer = constant.QUIZ_CORRECT_ANSWER
+
+        flex_message = FlexSendMessage(
+            alt_text='Carousel Latihan Soal',
+            contents=BubbleContainer(
+                direction='ltr',
+                body=BoxComponent(
+                    layout='vertical',
+                    contents=[
+                        TextComponent(
+                            text=feedback_answer,
+                            margin='md',
+                            size='md',
+                            align='center',
+                            gravity='center',
+                            weight='bold',
+                            wrap=True
+                        ),
+                    ]
+                )
+            )
+        )
+        flex_messages.append(flex_message)
+
+    next_quiz = {}
+    # get next quiz from redis
+    if 'material_quiz' in session:
+        if str(seq_next) in session['material_quiz']:
+            next_quiz = session['material_quiz'][str(seq_next)]
+    # get all random quiz from db
+    else:
+        # get questions
+        query_select_questions = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s) OFFSET floor(RANDOM()*3) LIMIT 3'
+        conn.query(query_select_questions, (str(postback['topic_id'])))
+        rows_question = conn.cursor.fetchall()
+
+        if rows_question is None: # quiz is empty
+            line_bot_api.reply_message(
+                event.reply_token,[
+                    TextMessage(
+                        text=constant.QUIZ_EMPTY
+                    )
+                ]
+            )
+        else:
+            quizes = {}
+            i = 1
+            for row in rows_question:
+                quizes[i] = {}
+                quizes[i]['id'] = row['id']
+                quizes[i]['question'] = row['question']
+                quizes[i]['correct_answer'] = row['correct_answer']
+                quizes[i]['solution'] = row['solution']
+                quizes[i]['material_id'] = row['material_id']
+                quizes[i]['answer'] = {}
+                
+                # get answers
+                query_select_answer = 'SELECT * FROM quiz_answer WHERE quiz_detail_id = %s ORDER BY random()'
+                conn.query(query_select_answer, (row['id'],))
+                rows_answer = conn.cursor.fetchall()
+
+                options = ['A', 'B', 'C', 'D', 'E']
+                o = 0
+                for row2 in rows_answer:
+                    quizes[i]['answer'][options[o]] = row2['answer']
+                    o+=1
+                
+                i+=1
+
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_quiz':quizes}))
+            next_quiz = quizes[seq_next]
+
+    # back to topic if there are no next question
+    if len(next_quiz) == 0:
+        flex_message_material_topic = show_material_topic(event, conn, postback)
+        flex_messages.append(flex_message_material_topic)
+
+        line_bot_api.reply_message(event.reply_token, flex_messages)
+    else:
+        answers = []
+        answers_button = []
+        for key, value in next_quiz['answer'].items():
+            answers.append(key +'. '+value)
+            answers_button.append(
+                ButtonComponent(
+                    action=PostbackAction(
+                        label=key,
+                        text=key,
+                        data='action=material_quiz&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)+'&quiz_detail_id='+str(next_quiz['id'])+'&answer='+value
+                    ),
+                    flex=1,
+                    margin='sm',
+                    style='primary'
+                )
+            )
+        
+        flex_message = FlexSendMessage(
+            alt_text='Carousel Latihan Soal',
+            contents=BubbleContainer(
+                direction='ltr',
+                body=BoxComponent(
+                    layout='vertical',
+                    contents=[
+                            TextComponent(
+                                text='Pertanyaan '+str(seq),
+                                margin='md',
+                                size='lg',
+                                align='center',
+                                gravity='center',
+                                weight='bold',
+                                wrap=True
+                            ),
+                            TextComponent(
+                                text=next_quiz['question'],
+                                margin='md',
+                                align='start',
+                                wrap=True
+                            ),
+                            TextComponent(
+                                text='\n'.join(str(x) for x in answers) ,
+                                margin='sm',
+                                wrap=True
+                            ),
+                    ]
+                ),
+                footer=BoxComponent(
+                    layout='horizontal',
+                    contents=[
+                        BoxComponent(
+                            layout='horizontal',
+                            contents=answers_button
+                        )
+                    ]
+                )
+            )
+        )
+        flex_messages.append(flex_message)
+
+        line_bot_api.reply_message(event.reply_token, flex_messages)
 
     print("flex_message final:", flex_messages)
     return 'OK'
@@ -683,28 +858,36 @@ def test_setredis(key,val):
 
 @app.route('/test_redis')
 def test_redis():
-    line_user_id = '124'
+    line_user_id = 'U991f707381b61d1d6e74f9c269b87665'
 
     session_bytes = redis.get(line_user_id)
     session = {}
     if session_bytes is not None:
         session = json.loads(session_bytes.decode("utf-8"))
 
-    print("HERE, session_bytes:", session_bytes)
+    # print("HERE, session_bytes:", session_bytes)
     print("HERE, session:", session)
 
-    if session == {}:
-        print("# BELUM LOGIN")
-        redis.set(line_user_id,json.dumps({'status':'login'}))
-    else:
-        if 'login' in session['status']:
-            print("# PROSES LOGIN")
-            redis.set(line_user_id,json.dumps({'status':'home'}))
-        elif 'home' in session['status']:
-            print("# HOME :)")
-            redis.set(line_user_id,json.dumps({'status':'unknown'}))
-        else:
-            print("# UNKNOWN")
+    # if session == {}:
+    #     print("# BELUM LOGIN")
+    #     redis.set(line_user_id,json.dumps({'status':'login'}))
+    # else:
+    #     if 'login' in session['status']:
+    #         print("# PROSES LOGIN")
+    #         redis.set(line_user_id,json.dumps({'status':'home'}))
+    #     elif 'home' in session['status']:
+    #         print("# HOME :)")
+    #         redis.set(line_user_id,json.dumps({'status':'unknown'}))
+    #     else:
+    #         print("# UNKNOWN")
+
+    rich_menu = session['rich_menu']
+    print("rm:", rich_menu=='')
+    print("rm:", len(rich_menu))
+
+    a = session['a']
+    print("a:", a=='')
+    print("a:", len(a))
               
     return 'OK'
 
