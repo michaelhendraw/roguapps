@@ -274,8 +274,6 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
-                else:
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
             seq = 1
             if 'sequence' in postback:
@@ -386,8 +384,6 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
-                else:
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
             flex_messages = []
             
@@ -402,12 +398,12 @@ def handle_postback(event):
             if 'answer' in postback:
                 feedback_answer = ''
 
-                if str(seq) in session['material_quiz']:
-                    quiz = session['material_quiz'][str(seq)]
+                if str(seq-1) in session['material_quiz']:
+                    quiz = session['material_quiz'][str(seq-1)]
                     if postback['answer'] != quiz['correct_answer']: # invalid answer
-                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (quiz['correct_answer'])
+                        feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (quiz['correct_answer'], quiz['solution'])
                     else:
-                        feedback_answer = constant.QUIZ_CORRECT_ANSWER
+                        feedback_answer = constant.QUIZ_CORRECT_ANSWER % (quiz['solution'])
 
                 flex_message = FlexSendMessage(
                     alt_text='Carousel Latihan Soal',
@@ -557,8 +553,6 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
-                else:
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
         # FINAL QUIZ
         elif 'final_quiz' == postback['action']:
@@ -599,175 +593,6 @@ def test_db():
     print("\n\n\nHERE, session:", session)
 
     # START CODE HERE
-    print("\n\n\n# session: home, action: material_quiz, rich menu: material_quiz")
-
-    if 'rich_menu' in session:
-        rich_menu = session['rich_menu']
-        if rich_menu == '':
-            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-            rich_menu.update(rich_menu_add)
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
-        else:
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-
-    flex_messages = []
-    
-    # get sequence
-    seq = 1
-    if 'sequence' in postback:
-        seq = int(postback['sequence'])
-
-    seq_next = seq+1
-
-    # check answer before
-    if 'answer' in postback:
-        feedback_answer = ''
-
-        if str(seq-1) in session['material_quiz']:
-            quiz = session['material_quiz'][str(seq-1)]
-            if postback['answer'] != quiz['correct_answer']: # invalid answer
-                feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (quiz['correct_answer'])
-            else:
-                feedback_answer = constant.QUIZ_CORRECT_ANSWER
-
-        flex_message = FlexSendMessage(
-            alt_text='Carousel Latihan Soal',
-            contents=BubbleContainer(
-                direction='ltr',
-                body=BoxComponent(
-                    layout='vertical',
-                    contents=[
-                        TextComponent(
-                            text=feedback_answer,
-                            margin='md',
-                            size='md',
-                            align='center',
-                            gravity='center',
-                            weight='bold',
-                            wrap=True
-                        ),
-                    ]
-                )
-            )
-        )
-        flex_messages.append(flex_message)
-
-    next_quiz = {}
-    # get next quiz from redis
-    if 'material_quiz' in session:
-        if str(seq_next) in session['material_quiz']:
-            next_quiz = session['material_quiz'][str(seq_next)]
-    # get all random quiz from db
-    else:
-        # get questions
-        query_select_questions = 'SELECT * FROM quiz_detail WHERE material_id IN (SELECT id FROM material WHERE topic_id = %s) OFFSET floor(RANDOM()*3) LIMIT 3'
-        conn.query(query_select_questions, (str(postback['topic_id'])))
-        rows_question = conn.cursor.fetchall()
-
-        if rows_question is None: # quiz is empty
-            line_bot_api.reply_message(
-                event.reply_token,[
-                    TextMessage(
-                        text=constant.QUIZ_EMPTY
-                    )
-                ]
-            )
-        else:
-            quizes = {}
-            i = 1
-            for row in rows_question:
-                quizes[i] = {}
-                quizes[i]['id'] = row['id']
-                quizes[i]['question'] = row['question']
-                quizes[i]['correct_answer'] = row['correct_answer']
-                quizes[i]['solution'] = row['solution']
-                quizes[i]['material_id'] = row['material_id']
-                quizes[i]['answer'] = {}
-                
-                # get answers
-                query_select_answer = 'SELECT * FROM quiz_answer WHERE quiz_detail_id = %s ORDER BY random()'
-                conn.query(query_select_answer, (row['id'],))
-                rows_answer = conn.cursor.fetchall()
-
-                options = ['A', 'B', 'C', 'D', 'E']
-                o = 0
-                for row2 in rows_answer:
-                    quizes[i]['answer'][options[o]] = row2['answer']
-                    o+=1
-                
-                i+=1
-
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_quiz':quizes}))
-            next_quiz = quizes[seq_next]
-
-    # back to topic if there are no next question
-    if len(next_quiz) == 0:
-        flex_message_material_topic = show_material_topic(event, conn, postback)
-        flex_messages.append(flex_message_material_topic)
-
-        line_bot_api.reply_message(event.reply_token, flex_messages)
-    else:
-        answers = []
-        answers_button = []
-        for key, value in next_quiz['answer'].items():
-            answers.append(key +'. '+value)
-            answers_button.append(
-                ButtonComponent(
-                    action=PostbackAction(
-                        label=key,
-                        text=key,
-                        data='action=material_quiz&subject_id='+str(postback['subject_id'])+'&topic_id='+str(postback['topic_id'])+'&sequence='+str(seq_next)+'&quiz_detail_id='+str(next_quiz['id'])+'&answer='+value
-                    ),
-                    flex=1,
-                    margin='sm',
-                    style='primary'
-                )
-            )
-        
-        flex_message = FlexSendMessage(
-            alt_text='Carousel Latihan Soal',
-            contents=BubbleContainer(
-                direction='ltr',
-                body=BoxComponent(
-                    layout='vertical',
-                    contents=[
-                            TextComponent(
-                                text='Pertanyaan '+str(seq),
-                                margin='md',
-                                size='lg',
-                                align='center',
-                                gravity='center',
-                                weight='bold',
-                                wrap=True
-                            ),
-                            TextComponent(
-                                text=next_quiz['question'],
-                                margin='md',
-                                align='start',
-                                wrap=True
-                            ),
-                            TextComponent(
-                                text='\n'.join(str(x) for x in answers) ,
-                                margin='sm',
-                                wrap=True
-                            ),
-                    ]
-                ),
-                footer=BoxComponent(
-                    layout='horizontal',
-                    contents=[
-                        BoxComponent(
-                            layout='horizontal',
-                            contents=answers_button
-                        )
-                    ]
-                )
-            )
-        )
-        flex_messages.append(flex_message)
-
-        line_bot_api.reply_message(event.reply_token, flex_messages)
 
     print("flex_message final:", flex_messages)
     return 'OK'
