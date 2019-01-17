@@ -624,8 +624,8 @@ def test_db():
     if 'answer' in postback:
         feedback_answer = ''
 
-        if str(seq) in session['material_quiz']:
-            quiz = session['material_quiz'][str(seq)]
+        if str(seq-1) in session['material_quiz']:
+            quiz = session['material_quiz'][str(seq-1)]
             if postback['answer'] != quiz['correct_answer']: # invalid answer
                 feedback_answer = constant.QUIZ_INCORRECT_ANSWER % (quiz['correct_answer'])
             else:
