@@ -274,6 +274,8 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
+                else:
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
             seq = 1
             if 'sequence' in postback:
@@ -384,6 +386,8 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+                else:
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
             flex_messages = []
             
@@ -430,8 +434,8 @@ def handle_postback(event):
             next_quiz = {}
             # get next quiz from redis
             if 'material_quiz' in session:
-                if str(seq_next) in session['material_quiz']:
-                    next_quiz = session['material_quiz'][str(seq_next)]
+                if str(seq) in session['material_quiz']:
+                    next_quiz = session['material_quiz'][str(seq)]
             # get all random quiz from db
             else:
                 # get questions
@@ -473,7 +477,7 @@ def handle_postback(event):
                         i+=1
 
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_quiz':quizes}))
-                    next_quiz = quizes[seq_next]
+                    next_quiz = quizes[seq]
 
             # back to topic if there are no next question
             if len(next_quiz) == 0:
@@ -553,6 +557,9 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+                else:
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+
         # FINAL QUIZ
         elif 'final_quiz' == postback['action']:
             print("\n\n\n# session: home, action: final_quiz, rich menu: final_quiz")
@@ -601,6 +608,8 @@ def test_db():
             rich_menu.update(rich_menu_add)
             redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
             line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+        else:
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
 
     flex_messages = []
     
