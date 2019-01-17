@@ -439,7 +439,7 @@ def handle_postback(event):
                 conn.query(query_select_questions, (str(postback['topic_id'])))
                 rows_question = conn.cursor.fetchall()
 
-                if rows_question is None: # quiz is empty
+                if rows_question == None: # quiz is empty
                     line_bot_api.reply_message(
                         event.reply_token,[
                             TextMessage(
