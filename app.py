@@ -391,9 +391,6 @@ def handle_postback(event):
             seq = 1
             if 'sequence' in postback:
                 seq = int(postback['sequence'])
-            else:
-                # reset redis material_quiz if there are no sequence
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))                
 
             seq_next = seq+1
 
@@ -480,6 +477,9 @@ def handle_postback(event):
 
             # back to topic if there are no next question
             if len(next_quiz) == 0:
+                # reset redis material_quiz if there are no sequence
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))                
+                
                 flex_message_material_topic = show_material_topic(event, conn, postback)
                 flex_messages.append(flex_message_material_topic)
 
