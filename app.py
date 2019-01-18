@@ -981,9 +981,9 @@ def create_rich_menu_material_topic(line_user_id, subject_id, topic_id):
                     height=780
                 ),
                 action=PostbackAction(
-                    label='Latihan Soal',
-                    text='Latihan Soal',
-                    data='action=material_quiz&subject_id='+subject_id+'&topic_id='+topic_id
+                    label='Diskusi',
+                    text='Diskusi',
+                    data='action=material_discussion&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
             RichMenuArea(
@@ -994,9 +994,9 @@ def create_rich_menu_material_topic(line_user_id, subject_id, topic_id):
                     height=784
                 ),
                 action=PostbackAction(
-                    label='Diskusi',
-                    text='Diskusi',
-                    data='action=material_discussion&subject_id='+subject_id+'&topic_id='+topic_id
+                    label='Latihan Soal',
+                    text='Latihan Soal',
+                    data='action=material_quiz&subject_id='+subject_id+'&topic_id='+topic_id
                 )
             ),
         ]
