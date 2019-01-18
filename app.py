@@ -595,19 +595,23 @@ def handle_postback(event):
                 discussions = []
                 for row in row_discussion:
                     # get name user
-                    user = ""
+                    name = ""
                     if row['teacher_id'] != 0:
                         query_select_user = 'SELECT name FROM teacher WHERE id = %s'
                         conn.query(query_select_user, (str(row['teacher_id'])))
                         row_user = conn.cursor.fetchone()
-                        discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + row_user['name'] + ' mengatakan:\n' + row['description'])
+                        if row_user is not None:
+                            name = str(row_user['name'])
                     else:
                         query_select_user = 'SELECT name FROM student WHERE id = %s'
                         conn.query(query_select_user, (str(row['student_id'])))
                         row_user = conn.cursor.fetchone()
-                        discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + row_user['name'] + ' mengatakan:\n' + row['description'])
+                        if row_user is not None:
+                            name = str(row_user['name'])
                     
-
+                    discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + name + ' mengatakan:\n' + row['description'])
+                
+                discussions.append('Silahkan masukkan jawaban kamu untuk menanggapi diskusi')
                 line_bot_api.reply_message(
                     event.reply_token,[
                         TextMessage(
@@ -650,28 +654,69 @@ def test_db():
     # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3'} # soal 1
     # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '1', 'answer': '8 cm'} # correct
     # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '2', 'answer': '13 cm2'} # incorrect
-    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '2' , 'sequence': '3', 'answer': '25 cm2'} # correct + back to topic
+    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '3', 'answer': '25 cm2'} # correct + back to topic
 
     session_bytes = redis.get(line_user_id)
     session = {}
-    # if session_bytes is not None:
-        # session = json.loads(session_bytes.decode("utf-8"))
+    if session_bytes is not None:
+        session = json.loads(session_bytes.decode("utf-8"))
     print("\n\n\nHERE, session:", session)
 
     # START CODE HERE
-    text = "Semangat :)"
-    session['material_discussion'] = {}
-    session['material_discussion']['class_discussion_id'] = 1
-    session['material_discussion']['teacher_id'] = 2
-    session['material_discussion']['student_id'] = 3
+    # get class discussion
+    query_select_discussion = 'SELECT * FROM class_discussion_detail WHERE class_discussion_id in (SELECT id FROM class_discussion WHERE topic_id = %s AND class_subject_id IN (SELECT id FROM class_subject WHERE class_id = %s)) order by id ASC'
+    conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
+    row_discussion = conn.cursor.fetchall()
 
-    query_insert_discussion = 'INSERT INTO class_discussion_detail (class_discussion_id, description, teacher_id, student_id, date) VALUES (%s, %s, %s, %s, NOW())'
-    insert_discussion = (session['material_discussion']['class_discussion_id'], text, session['material_discussion']['teacher_id'], session['material_discussion']['student_id'])
-    conn.query(query_insert_discussion, insert_discussion)
-    conn.commit()
+    if len(row_discussion) == 0: # discussion is empty
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text=constant.DISCUSSION_EMPTY
+                )
+            ]
+        )
+    else:
+        if 'rich_menu' in session:
+            material_discussion_redis = {}
+            material_discussion_redis['subject_id'] = postback['subject_id']
+            material_discussion_redis['class_discussion_id'] = row_discussion[0]['class_discussion_id']
+            material_discussion_redis['teacher_id'] = 0
+            material_discussion_redis['student_id'] = session['user_id']
 
-    count = conn.cursor.rowcount
-    print("count:", count)
+            rich_menu = session['rich_menu']
+            rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+            rich_menu.update(rich_menu_add)
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_discussion':material_discussion_redis}))
+            line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+
+        discussions = []
+        for row in row_discussion:
+            # get name user
+            name = ""
+            if row['teacher_id'] != 0:
+                query_select_user = 'SELECT name FROM teacher WHERE id = %s'
+                conn.query(query_select_user, (str(row['teacher_id'])))
+                row_user = conn.cursor.fetchone()
+                if row_user is not None:
+                    name = str(row_user['name'])
+            else:
+                query_select_user = 'SELECT name FROM student WHERE id = %s'
+                conn.query(query_select_user, (str(row['student_id'])))
+                row_user = conn.cursor.fetchone()
+                if row_user is not None:
+                    name = str(row_user['name'])
+            
+            discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + name + ' mengatakan:\n' + row['description'])
+
+        # line_bot_api.reply_message(
+        #     event.reply_token,[
+        #         TextMessage(
+        #             text='\n\n'.join(discussions)
+        #         )
+        #     ]
+        # )
+        print('\n\n'.join(discussions))
 
     return 'OK'
 
