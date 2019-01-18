@@ -547,7 +547,6 @@ def handle_postback(event):
                 flex_messages.append(flex_message)
 
                 line_bot_api.reply_message(event.reply_token, flex_messages)
-
         elif 'material_discussion' == postback['action']:
             print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
 
@@ -558,6 +557,49 @@ def handle_postback(event):
                     rich_menu.update(rich_menu_add)
                     redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+
+            # get class discussion
+            query_select_discussion = 'SELECT * FROM class_discussion_detail WHERE class_discussion_id in (SELECT id FROM class_discussion WHERE topic_id = %s AND class_subject_id IN (SELECT id FROM class_subject WHERE class_id = %s)) order by id ASC'
+            conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
+            row_discussion = conn.cursor.fetchall()
+
+            if row_discussion == None: # discussion is empty
+                line_bot_api.reply_message(
+                    event.reply_token,[
+                        TextMessage(
+                            text=constant.DISCUSSION_EMPTY
+                        )
+                    ]
+                )
+            else:
+                discussions = []
+                for row in row_discussion:
+                    # get name user
+                    user = ""
+                    if row['teacher_id'] != 0:
+                        query_select_user = 'SELECT name FROM teacher WHERE id = %s'
+                        conn.query(query_select_user, (str(row['teacher_id'])))
+                        row_user = conn.cursor.fetchone()
+                        user = row_user['name']
+                    else:
+                        query_select_user = 'SELECT name FROM student WHERE id = %s'
+                        conn.query(query_select_user, (str(row['student_id'])))
+                        row_user = conn.cursor.fetchone()
+                        user = row_user['name']
+                    
+                    discussions.append('[' + row['date'] + '] ' + user + ' mengatakan:\n' + row['description'])
+
+                line_bot_api.reply_message(
+                    event.reply_token,[
+                        TextMessage(
+                            text='\n\n'.join(discussions)
+                        )
+                    ]
+                )
+            
+            # 4. trigger balas diskusi ?
+            # 5. save db
+            # 6. balikin ke topik
 
         # FINAL QUIZ
         elif 'final_quiz' == postback['action']:
@@ -598,8 +640,49 @@ def test_db():
     print("\n\n\nHERE, session:", session)
 
     # START CODE HERE
+    # get class discussion
+    query_select_discussion = 'SELECT * FROM class_discussion_detail WHERE class_discussion_id in (SELECT id FROM class_discussion WHERE topic_id = %s AND class_subject_id IN (SELECT id FROM class_subject WHERE class_id = %s)) order by id ASC'
+    conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
+    row_discussion = conn.cursor.fetchall()
 
-    print("flex_message final:", flex_messages)
+    if row_discussion == None: # discussion is empty
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text=constant.DISCUSSION_EMPTY
+                )
+            ]
+        )
+    else:
+        discussions = []
+        for row in row_discussion:
+            # get name user
+            user = ""
+            if row['teacher_id'] != 0:
+                query_select_user = 'SELECT name FROM teacher WHERE id = %s'
+                conn.query(query_select_user, (str(row['teacher_id'])))
+                row_user = conn.cursor.fetchone()
+                user = row_user['name']
+            else:
+                query_select_user = 'SELECT name FROM student WHERE id = %s'
+                conn.query(query_select_user, (str(row['student_id'])))
+                row_user = conn.cursor.fetchone()
+                user = row_user['name']
+            
+            discussions.append('[' + row['date'] + '] ' + user + ' mengatakan:\n' + row['description'])
+
+        line_bot_api.reply_message(
+            event.reply_token,[
+                TextMessage(
+                    text='\n\n'.join(discussions)
+                )
+            ]
+        )
+    
+    # 4. trigger balas diskusi ?
+    # 5. save db
+    # 6. balikin ke topik
+
     return 'OK'
 
 @app.route('/test_template', methods=['GET'])

@@ -38,3 +38,6 @@ TOPIC_EMPTY = 'Maaf, mapel ini belum memiliki topik.'
 QUIZ_EMPTY = 'Maaf, topik ini belum memiliki pertanyaan.'
 QUIZ_INCORRECT_ANSWER = 'Ops, jawaban kamu salah. Jawaban yang benar adalah %s.\nPembahasan:\n%s'
 QUIZ_CORRECT_ANSWER = 'Ya, jawaban kamu benar.\nPembahasan:\n%s'
+
+# DISCUSSION
+DISCUSSION_EMPTY = 'Maaf, kelas kamu belum memiliki diskusi.'
