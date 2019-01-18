@@ -175,6 +175,7 @@ def handle_text_message(event):
 
                 redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':session['rich_menu']}))
 
+                flex_messages = []
                 flex_message_material_topic = show_material_topic(event, conn, session['material_discussion'])
                 flex_messages.append(flex_message_material_topic)
 
