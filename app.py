@@ -269,11 +269,10 @@ def handle_postback(event):
             
             if 'rich_menu' in session:
                 rich_menu = session['rich_menu']
-                if 'material_learn' not in rich_menu:
-                    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-                    rich_menu.update(rich_menu_add)
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
+                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                rich_menu.update(rich_menu_add)
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
 
             seq = 1
             if 'sequence' in postback:
@@ -379,11 +378,10 @@ def handle_postback(event):
 
             if 'rich_menu' in session:
                 rich_menu = session['rich_menu']
-                if 'material_quiz' not in rich_menu:
-                    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-                    rich_menu.update(rich_menu_add)
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
+                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                rich_menu.update(rich_menu_add)
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
 
             flex_messages = []
             
@@ -552,11 +550,10 @@ def handle_postback(event):
 
             if 'rich_menu' in session:
                 rich_menu = session['rich_menu']
-                if 'material_discussion' not in rich_menu:
-                    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-                    rich_menu.update(rich_menu_add)
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                rich_menu.update(rich_menu_add)
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
 
             # get class discussion
             query_select_discussion = 'SELECT * FROM class_discussion_detail WHERE class_discussion_id in (SELECT id FROM class_discussion WHERE topic_id = %s AND class_subject_id IN (SELECT id FROM class_subject WHERE class_id = %s)) order by id ASC'
