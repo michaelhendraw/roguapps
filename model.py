@@ -15,6 +15,9 @@ class Conn(object):
             return self.cursor.execute(query)    
         else:
             return self.cursor.execute(query, params)
+    
+    def commit(self):
+        return self.connection.commit()
 
     def __del__(self):
         self.connection.close()

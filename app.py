@@ -165,6 +165,21 @@ def handle_text_message(event):
                             )
                         ]
                     )
+        else:
+            # to handle save reply on discussion
+            if 'material_discussion' in session:
+                query_insert_discussion = 'INSERT INTO class_discussion_detail (class_discussion_id, description, teacher_id, student_id, date) VALUES (%s, %s, %s, %s, NOW())'
+                insert_discussion = (session['material_discussion']['class_discussion_id'], text, session['material_discussion']['teacher_id'], session['material_discussion']['student_id'])
+                conn.query(query_insert_discussion, insert_discussion)
+                conn.commit()
+
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':session['rich_menu']}))
+
+                flex_message_material_topic = show_material_topic(event, conn, session['material_discussion'])
+                flex_messages.append(flex_message_material_topic)
+
+                line_bot_api.reply_message(event.reply_token, flex_messages)
+
 
 @handler.add(PostbackEvent)
 def handle_postback(event):
@@ -548,13 +563,6 @@ def handle_postback(event):
         elif 'material_discussion' == postback['action']:
             print("\n\n\n# session: home, action: material_discussion, rich menu: material_discussion")
 
-            if 'rich_menu' in session:
-                rich_menu = session['rich_menu']
-                rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
-                rich_menu.update(rich_menu_add)
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
-                line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
-
             # get class discussion
             query_select_discussion = 'SELECT * FROM class_discussion_detail WHERE class_discussion_id in (SELECT id FROM class_discussion WHERE topic_id = %s AND class_subject_id IN (SELECT id FROM class_subject WHERE class_id = %s)) order by id ASC'
             conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
@@ -569,6 +577,19 @@ def handle_postback(event):
                     ]
                 )
             else:
+                if 'rich_menu' in session:
+                    material_discussion_redis = {}
+                    material_discussion_redis['subject_id'] = postback['subject_id']
+                    material_discussion_redis['class_discussion_id'] = row_discussion[0]['class_discussion_id']
+                    material_discussion_redis['teacher_id'] = 0
+                    material_discussion_redis['student_id'] = session['user_id']
+
+                    rich_menu = session['rich_menu']
+                    rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
+                    rich_menu.update(rich_menu_add)
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_discussion':material_discussion_redis}))
+                    line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
+
                 discussions = []
                 for row in row_discussion:
                     # get name user
@@ -632,49 +653,24 @@ def test_db():
 
     session_bytes = redis.get(line_user_id)
     session = {}
-    if session_bytes is not None:
-        session = json.loads(session_bytes.decode("utf-8"))
+    # if session_bytes is not None:
+        # session = json.loads(session_bytes.decode("utf-8"))
     print("\n\n\nHERE, session:", session)
 
     # START CODE HERE
-    # get class discussion
-    query_select_discussion = 'SELECT * FROM class_discussion_detail WHERE class_discussion_id in (SELECT id FROM class_discussion WHERE topic_id = %s AND class_subject_id IN (SELECT id FROM class_subject WHERE class_id = %s)) order by id ASC'
-    conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
-    row_discussion = conn.cursor.fetchall()
+    text = "Semangat :)"
+    session['material_discussion'] = {}
+    session['material_discussion']['class_discussion_id'] = 1
+    session['material_discussion']['teacher_id'] = 2
+    session['material_discussion']['student_id'] = 3
 
-    if len(row_discussion) == 0: # discussion is empty
-        print('empty:', constant.DISCUSSION_EMPTY)
-        line_bot_api.reply_message(
-            event.reply_token,[
-                TextMessage(
-                    text=constant.DISCUSSION_EMPTY
-                )
-            ]
-        )
-    else:
-        print('ada')
-        discussions = []
-        for row in row_discussion:
-            # get name user
-            user = ""
-            if row['teacher_id'] != 0:
-                query_select_user = 'SELECT name FROM teacher WHERE id = %s'
-                conn.query(query_select_user, (str(row['teacher_id'])))
-                row_user = conn.cursor.fetchone()
-                user = row_user['name']
-            else:
-                query_select_user = 'SELECT name FROM student WHERE id = %s'
-                conn.query(query_select_user, (str(row['student_id'])))
-                row_user = conn.cursor.fetchone()
-                user = row_user['name']
-            
-            discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + user + ' mengatakan:\n' + row['description'])
+    query_insert_discussion = 'INSERT INTO class_discussion_detail (class_discussion_id, description, teacher_id, student_id, date) VALUES (%s, %s, %s, %s, NOW())'
+    insert_discussion = (session['material_discussion']['class_discussion_id'], text, session['material_discussion']['teacher_id'], session['material_discussion']['student_id'])
+    conn.query(query_insert_discussion, insert_discussion)
+    conn.commit()
 
-        print('\n\n'.join(discussions))
-    
-    # 4. trigger balas diskusi ?
-    # 5. save db
-    # 6. balikin ke topik
+    count = conn.cursor.rowcount
+    print("count:", count)
 
     return 'OK'
 
