@@ -600,14 +600,13 @@ def handle_postback(event):
                         query_select_user = 'SELECT name FROM teacher WHERE id = %s'
                         conn.query(query_select_user, (str(row['teacher_id'])))
                         row_user = conn.cursor.fetchone()
-                        user = row_user['name']
+                        discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + row_user['name'] + ' mengatakan:\n' + row['description'])
                     else:
                         query_select_user = 'SELECT name FROM student WHERE id = %s'
                         conn.query(query_select_user, (str(row['student_id'])))
                         row_user = conn.cursor.fetchone()
-                        user = row_user['name']
+                        discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + row_user['name'] + ' mengatakan:\n' + row['description'])
                     
-                    discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + user + ' mengatakan:\n' + row['description'])
 
                 line_bot_api.reply_message(
                     event.reply_token,[
