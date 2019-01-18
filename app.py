@@ -587,7 +587,7 @@ def handle_postback(event):
                         row_user = conn.cursor.fetchone()
                         user = row_user['name']
                     
-                    discussions.append('[' + row['date'] + '] ' + user + ' mengatakan:\n' + row['description'])
+                    discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + user + ' mengatakan:\n' + row['description'])
 
                 line_bot_api.reply_message(
                     event.reply_token,[
@@ -669,15 +669,9 @@ def test_db():
                 row_user = conn.cursor.fetchone()
                 user = row_user['name']
             
-            discussions.append('[' + row['date'] + '] ' + user + ' mengatakan:\n' + row['description'])
+            discussions.append('[' + row['date'].strftime('%m %b %d, %H:%M') + '] ' + user + ' mengatakan:\n' + row['description'])
 
-        line_bot_api.reply_message(
-            event.reply_token,[
-                TextMessage(
-                    text='\n\n'.join(discussions)
-                )
-            ]
-        )
+        print('\n\n'.join(discussions))
     
     # 4. trigger balas diskusi ?
     # 5. save db
