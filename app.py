@@ -213,7 +213,7 @@ def handle_postback(event):
             query_select = 'SELECT * FROM subject WHERE id IN (SELECT subject_id FROM class_subject WHERE class_id = %s)'
             conn.query(query_select, (session['class_id'],))
             rows = conn.cursor.fetchall()
-            if rows == None: # subject is empty
+            if len(rows) == 0: # subject is empty
                 line_bot_api.reply_message(
                     event.reply_token,[
                         TextMessage(
@@ -439,7 +439,7 @@ def handle_postback(event):
                 conn.query(query_select_questions, (str(postback['topic_id'])))
                 rows_question = conn.cursor.fetchall()
 
-                if rows_question == None: # quiz is empty
+                if len(rows_question) == 0: # quiz is empty
                     line_bot_api.reply_message(
                         event.reply_token,[
                             TextMessage(
@@ -563,7 +563,7 @@ def handle_postback(event):
             conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
             row_discussion = conn.cursor.fetchall()
 
-            if row_discussion == None: # discussion is empty
+            if len(row_discussion) == 0: # discussion is empty
                 line_bot_api.reply_message(
                     event.reply_token,[
                         TextMessage(
@@ -631,7 +631,7 @@ def test_db():
     # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3'} # soal 1
     # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '1', 'answer': '8 cm'} # correct
     # postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '2', 'answer': '13 cm2'} # incorrect
-    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '3' , 'sequence': '3', 'answer': '25 cm2'} # correct + back to topic
+    postback = {'action': 'material_learn', 'subject_id': '2', 'topic_id': '2' , 'sequence': '3', 'answer': '25 cm2'} # correct + back to topic
 
     session_bytes = redis.get(line_user_id)
     session = {}
@@ -645,7 +645,8 @@ def test_db():
     conn.query(query_select_discussion, (str(postback['topic_id']), session['class_id']))
     row_discussion = conn.cursor.fetchall()
 
-    if row_discussion == None: # discussion is empty
+    if len(row_discussion) == 0: # discussion is empty
+        print('empty:', constant.DISCUSSION_EMPTY)
         line_bot_api.reply_message(
             event.reply_token,[
                 TextMessage(
@@ -654,6 +655,7 @@ def test_db():
             ]
         )
     else:
+        print('ada')
         discussions = []
         for row in row_discussion:
             # get name user
@@ -692,7 +694,7 @@ def test_template():
     query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
     conn.query(query_select_topic, '1')
     rows_topic = conn.cursor.fetchall()
-    if rows_topic == None: # topic is empty
+    if len(rows_topic) == 0: # topic is empty
         line_bot_api.reply_message(
             event.reply_token,[
                 TextMessage(
@@ -1126,7 +1128,7 @@ def show_material_topic(event, conn, postback):
     query_select_topic = 'SELECT * FROM topic WHERE subject_id = %s'
     conn.query(query_select_topic, (postback['subject_id'],))
     rows_topic = conn.cursor.fetchall()
-    if rows_topic == None: # topic is empty
+    if len(rows_topic) == 0: # topic is empty
         line_bot_api.reply_message(
             event.reply_token,[
                 TextMessage(
