@@ -244,7 +244,7 @@ def handle_postback(event):
                         BubbleContainer(
                             direction='ltr',
                             hero=ImageComponent(
-                                url=row['image'],
+                                url=constant.SUBJECT_URL+row['image'],
                                 size='full',
                                 aspect_ratio='20:13',
                                 aspect_mode='cover'

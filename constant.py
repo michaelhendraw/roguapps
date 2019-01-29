@@ -30,6 +30,7 @@ WELCOME_HOME = 'Hai %s, silahkan pilih menu navigasi untuk melanjutkan belajar.'
 
 # SUBJECT
 SUBJECT_EMPTY = 'Maaf, kelas kamu belum memiliki mapel.'
+SUBJECT_URL = 'https://rogucms.herokuapp.com/uploads/subject/'
 
 # TOPIC
 TOPIC_EMPTY = 'Maaf, mapel ini belum memiliki topik.'
