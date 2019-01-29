@@ -119,11 +119,11 @@ def handle_text_message(event):
                     ]
                 )
             else:
-                code = texts[0]
+                nisn = texts[0]
                 dob = texts[1]
                 if util.validate_date(dob,'%d%m%Y'):
-                    query_select = 'SELECT * FROM student WHERE code = %s AND dob = %s LIMIT 1'
-                    conn.query(query_select, (code, util.convert_date(dob,'%d%m%Y','%Y-%m-%d')))
+                    query_select = 'SELECT * FROM student WHERE nisn = %s AND dob = %s LIMIT 1'
+                    conn.query(query_select, (nisn, util.convert_date(dob,'%d%m%Y','%Y-%m-%d')))
                     row = conn.cursor.fetchone()
                     if row == None: # LOGIN GAGAL
                         line_bot_api.reply_message(
@@ -143,7 +143,7 @@ def handle_text_message(event):
                         rich_menu = create_rich_menu(line_user_id)
 
                         line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['home'])
-                        redis.set(line_user_id,json.dumps({'user_id':row['id'],'code':row['code'],'name':row['name'],'class_id':row['class_id'],'status':'home','rich_menu':rich_menu}))
+                        redis.set(line_user_id,json.dumps({'user_id':row['id'],'nisn':row['nisn'],'name':row['name'],'class_id':row['class_id'],'status':'home','rich_menu':rich_menu}))
                         
                         line_bot_api.reply_message(
                             event.reply_token,[
@@ -168,12 +168,12 @@ def handle_text_message(event):
         else:
             # to handle save reply on discussion
             if 'material_discussion' in session:
-                query_insert_discussion = 'INSERT INTO class_discussion_detail (class_discussion_id, description, teacher_id, student_id, date) VALUES (%s, %s, %s, %s, NOW())'
-                insert_discussion = (session['material_discussion']['class_discussion_id'], text, session['material_discussion']['teacher_id'], session['material_discussion']['student_id'])
+                query_insert_discussion = 'INSERT INTO class_discussion_detail (class_discussion_id, description, user_id, student_id, date) VALUES (%s, %s, %s, %s, NOW())'
+                insert_discussion = (session['material_discussion']['class_discussion_id'], text, session['material_discussion']['user_id'], session['material_discussion']['student_id'])
                 conn.query(query_insert_discussion, insert_discussion)
                 conn.commit()
 
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':session['rich_menu']}))
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':session['rich_menu']}))
 
                 flex_messages = []
                 flex_message_material_topic = show_material_topic(event, conn, session['material_discussion'])
@@ -288,7 +288,7 @@ def handle_postback(event):
                 if 'material_learn' not in rich_menu and 'material_quiz' not in rich_menu and 'material_discussion' not in rich_menu:
                     rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
                     rich_menu.update(rich_menu_add)
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_learn'])
 
             seq = 1
@@ -398,7 +398,7 @@ def handle_postback(event):
                 if 'material_learn' not in rich_menu and 'material_quiz' not in rich_menu and 'material_discussion' not in rich_menu:
                     rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
                     rich_menu.update(rich_menu_add)
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_quiz'])
 
             flex_messages = []
@@ -491,12 +491,12 @@ def handle_postback(event):
                     if seq in quizes:
                         next_quiz = quizes[seq]
 
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_quiz':quizes}))
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_quiz':quizes}))
 
             # back to topic if there are no next question
             if len(next_quiz) == 0:
                 # reset redis material_quiz if there are no sequence
-                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))                
+                redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu}))                
 
                 flex_message_material_topic = show_material_topic(event, conn, postback)
                 flex_messages.append(flex_message_material_topic)
@@ -584,22 +584,22 @@ def handle_postback(event):
                     material_discussion_redis = {}
                     material_discussion_redis['subject_id'] = postback['subject_id']
                     material_discussion_redis['class_discussion_id'] = row_discussion[0]['class_discussion_id']
-                    material_discussion_redis['teacher_id'] = 0
+                    material_discussion_redis['user_id'] = 0
                     material_discussion_redis['student_id'] = session['user_id']
 
                     rich_menu = session['rich_menu']
                     rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
                     rich_menu.update(rich_menu_add)
-                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_discussion':material_discussion_redis}))
+                    redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_discussion':material_discussion_redis}))
                     line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
 
                 discussions = []
                 for row in row_discussion:
                     # get name user
                     name = ""
-                    if row['teacher_id'] != 0:
-                        query_select_user = 'SELECT name FROM teacher WHERE id = %s'
-                        conn.query(query_select_user, (str(row['teacher_id'])))
+                    if row['user_id'] != 0:
+                        query_select_user = 'SELECT name FROM user WHERE id = %s'
+                        conn.query(query_select_user, (str(row['user_id'])))
                         row_user = conn.cursor.fetchone()
                         if row_user is not None:
                             name = str(row_user['name'])
@@ -620,16 +620,14 @@ def handle_postback(event):
                         )
                     ]
                 )
-            
-            # 4. trigger balas diskusi ?
-            # 5. save db
-            # 6. balikin ke topik
 
         # FINAL QUIZ
         elif 'final_quiz' == postback['action']:
             print("\n\n\n# session: home, action: final_quiz, rich menu: final_quiz")
             
             line_bot_api.link_rich_menu_to_user(line_user_id, session['rich_menu']['final_quiz'])
+
+            # TODO: CREATE FINAL, COPAS FROM QUIZ, SIMPAN DB/REDIS?
         # HOME
         else:
             print("\n\n\n# session: home, action: -, rich menu: home")
@@ -682,22 +680,22 @@ def test_db():
             material_discussion_redis = {}
             material_discussion_redis['subject_id'] = postback['subject_id']
             material_discussion_redis['class_discussion_id'] = row_discussion[0]['class_discussion_id']
-            material_discussion_redis['teacher_id'] = 0
+            material_discussion_redis['user_id'] = 0
             material_discussion_redis['student_id'] = session['user_id']
 
             rich_menu = session['rich_menu']
             rich_menu_add = create_rich_menu_material_topic(line_user_id, postback['subject_id'], postback['topic_id'])
             rich_menu.update(rich_menu_add)
-            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'code':session['code'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_discussion':material_discussion_redis}))
+            redis.set(line_user_id,json.dumps({'user_id':session['user_id'],'nisn':session['nisn'],'name':session['name'],'class_id':session['class_id'],'status':'home','rich_menu':rich_menu,'material_discussion':material_discussion_redis}))
             line_bot_api.link_rich_menu_to_user(line_user_id, rich_menu['material_discussion'])
 
         discussions = []
         for row in row_discussion:
             # get name user
             name = ""
-            if row['teacher_id'] != 0:
-                query_select_user = 'SELECT name FROM teacher WHERE id = %s'
-                conn.query(query_select_user, (str(row['teacher_id'])))
+            if row['user_id'] != 0:
+                query_select_user = 'SELECT name FROM user WHERE id = %s'
+                conn.query(query_select_user, (str(row['user_id'])))
                 row_user = conn.cursor.fetchone()
                 if row_user is not None:
                     name = str(row_user['name'])
