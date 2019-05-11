@@ -41,4 +41,4 @@ QUIZ_INCORRECT_ANSWER = 'Ops, jawaban kamu salah. Jawaban yang benar adalah %s.\
 QUIZ_CORRECT_ANSWER = 'Ya, jawaban kamu benar.\nPembahasan:\n%s'
 
 # DISCUSSION
-DISCUSSION_EMPTY = 'Maaf, kelas kamu belum memiliki diskusi.'
+DISCUSSION_EMPTY = 'Maaf, kelas kamu belum memiliki diskusi :(.'
